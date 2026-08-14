@@ -1,632 +1,377 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
     <title>ReviseGo</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css">
+
 </head>
 
+
 <body>
+
 
 <header class="top-bar">
 
     <div class="logo">
-        <span>Revise</span><strong>Go</strong>
+
+        <span>
+            Revise
+        </span>
+
+        <strong>
+            Go
+        </strong>
+
     </div>
+
 
     <div class="player-stats">
 
-    <span>
-        🔥 <span id="streak">0</span>
-    </span>
+        <span>
+            🔥
+            <span id="streak">
+                0
+            </span>
+        </span>
 
-    <span>
-        ⭐ <span id="total-xp">0</span> XP
-    </span>
 
-    <span class="corner-level">
-        LEVEL 1
-    </span>
+        <span>
+            ⭐
+            <span id="total-xp">
+                0
+            </span>
+            XP
+        </span>
 
-    <button
-        class="profile-button"
-        onclick="openProfile()">
-        👤 Profile
-    </button>
 
-</div>
+        <span class="corner-level">
+            LEVEL 1
+        </span>
+
+
+        <button
+            class="profile-button"
+            onclick="openProfile()">
+
+            👤 Profile
+
+        </button>
+
+    </div>
 
 </header>
 
 
+
 <main>
 
-    <!-- HOME -->
 
-    <section id="home-screen" class="screen active">
+<!-- =====================================================
+     HOME
+===================================================== -->
 
-        <div class="hero">
-
-            <p class="small-heading">
-                WELCOME TO THE ARCADE
-            </p>
-
-            <h1>
-                Revision.<br>
-                <span>But actually fun.</span>
-            </h1>
-
-            <p class="hero-text">
-                Jump into a game, earn XP, build streaks and
-                level up while you revise.
-            </p>
-
-        </div>
+<section
+    id="home-screen"
+    class="screen active">
 
 
-<div class="level-card">
+    <div class="hero">
 
-    <div class="level-card-top">
-
-        <div>
-            <span class="game-tag">YOUR PROGRESS</span>
-
-            <h3>
-                <span class="player-level">LEVEL 1</span>
-            </h3>
-        </div>
-
-        <div class="level-badge">
-            ⭐
-        </div>
-
-    </div>
+        <p class="small-heading">
+            WELCOME TO THE ARCADE
+        </p>
 
 
-    <div class="level-progress-container">
+        <h1>
 
-        <div
-            class="level-progress"
-            style="width: 0%;">
-        </div>
+            Revision.<br>
 
-    </div>
+            <span>
+                But actually fun.
+            </span>
 
-
-    <div class="level-card-bottom">
-
-        <span class="level-xp">
-            0 / 500 XP
-        </span>
-
-        <span>
-            Keep going!
-        </span>
-
-    </div>
-
-</div>
+        </h1>
 
 
-        <!-- GAMES -->
+        <p class="hero-text">
 
-        <div class="section-heading">
+            Jump into a game, earn XP, build streaks and
+            level up while you revise.
 
-            <div>
-
-                <p class="small-heading">
-                    PLAY NOW
-                </p>
-
-                <h2>
-                    Choose your game
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="game-grid">
-
-            <button
-                class="game-card featured"
-                onclick="openSubjects()">
-
-                <div class="game-icon">
-                    ⚡
-                </div>
-
-                <div class="game-info">
-
-                    <span class="game-tag">
-                        QUICK PLAY
-                    </span>
-
-                    <h3>
-                        Quick Battle
-                    </h3>
-
-                    <p>
-                        Answer questions, build your combo
-                        and survive the battle.
-                    </p>
-
-                </div>
-
-                <span class="play-arrow">
-                    →
-                </span>
-
-            </button>
-
-
-            <button
-    class="game-card locked premium-game"
-    onclick="openPremiumGame('Boss Battle')">
-
-    <div class="game-icon">
-        👾
-    </div>
-
-    <div class="game-info">
-
-        <span class="game-tag">
-            PREMIUM
-        </span>
-
-        <h3>
-            Boss Battle
-        </h3>
-
-        <p>
-            Take on difficult topics and
-            defeat the ultimate revision bosses.
         </p>
 
     </div>
 
-    <span class="lock">
-        🔒
-    </span>
-
-</button>
 
 
-            <button
-    class="game-card locked premium-game"
-    onclick="openPremiumGame('Speed Run')">
+    <!-- LEVEL -->
 
-    <div class="game-icon">
-        ⏱️
-    </div>
+    <div class="level-card">
 
-    <div class="game-info">
-
-        <span class="game-tag">
-            PREMIUM
-        </span>
-
-        <h3>
-            Speed Run
-        </h3>
-
-        <p>
-            How many questions can you solve
-            before time runs out?
-        </p>
-
-    </div>
-
-    <span class="lock">
-        🔒
-    </span>
-
-</button>
-
-        </div>
-
-
-        <!-- DAILY -->
-
-        <div class="daily-card">
+        <div class="level-card-top">
 
             <div>
 
                 <span class="game-tag">
-                    DAILY CHALLENGE
+                    YOUR PROGRESS
                 </span>
+
 
                 <h3>
-                    Keep the streak alive 🔥
+
+                    <span class="player-level">
+                        LEVEL 1
+                    </span>
+
                 </h3>
 
-                <p>
-                    Daily challenges and streak rewards
-                    are coming soon.
-                </p>
-
             </div>
 
-            <div class="daily-icon">
-                🔥
+
+            <div class="level-badge">
+                ⭐
             </div>
 
         </div>
 
-    </section>
+
+        <div class="level-progress-container">
+
+            <div
+                class="level-progress"
+                style="width: 0%;">
+
+            </div>
+
+        </div>
 
 
-    <!-- SUBJECTS -->
+        <div class="level-card-bottom">
 
-    <section id="subject-screen" class="screen">
-
-        <button
-            class="back-button"
-            onclick="showScreen('home-screen')">
-
-            ← Back
-
-        </button>
+            <span class="level-xp">
+                0 / 500 XP
+            </span>
 
 
-        <div class="page-title">
+            <span>
+                Keep going!
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- GAMES -->
+
+    <div class="section-heading">
+
+        <div>
 
             <p class="small-heading">
-                QUICK BATTLE
-            </p>
-
-            <h1>
-                Choose a subject
-            </h1>
-
-            <p>
-                Pick what you want to revise.
-            </p>
-
-        </div>
-
-
-        <div class="subject-grid">
-
-            <button
-                class="subject-card"
-                onclick="startGame('Maths')">
-
-                <span class="subject-icon">
-                    🔢
-                </span>
-
-                <span>
-
-                    <strong>
-                        Maths
-                    </strong>
-
-                    <small>
-                        Numbers, algebra & more
-                    </small>
-
-                </span>
-
-                <span>
-                    →
-                </span>
-
-            </button>
-
-
-            <button
-                class="subject-card"
-                onclick="startGame('Science')">
-
-                <span class="subject-icon">
-                    🧪
-                </span>
-
-                <span>
-
-                    <strong>
-                        Science
-                    </strong>
-
-                    <small>
-                        Biology, chemistry & physics
-                    </small>
-
-                </span>
-
-                <span>
-                    →
-                </span>
-
-            </button>
-
-
-            <button class="subject-card disabled">
-
-                <span class="subject-icon">
-                    📖
-                </span>
-
-                <span>
-
-                    <strong>
-                        English
-                    </strong>
-
-                    <small>
-                        Coming soon
-                    </small>
-
-                </span>
-
-                <span>
-                    🔒
-                </span>
-
-            </button>
-
-
-            <button class="subject-card disabled">
-
-                <span class="subject-icon">
-                    🏛️
-                </span>
-
-                <span>
-
-                    <strong>
-                        History
-                    </strong>
-
-                    <small>
-                        Coming soon
-                    </small>
-
-                </span>
-
-                <span>
-                    🔒
-                </span>
-
-            </button>
-
-        </div>
-
-    </section>
-
-
-    <!-- GAME -->
-
-    <section id="game-screen" class="screen">
-
-        <div class="game-top">
-
-            <button
-                class="back-button"
-                onclick="leaveGame()">
-
-                ← Quit
-
-            </button>
-
-
-            <div class="question-counter">
-
-                <span id="question-number">
-                    1
-                </span>/10
-
-            </div>
-
-
-            <div class="timer">
-
-                ⏱️
-                <span id="timer">
-                    15
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="progress-container">
-
-            <div
-                id="progress-bar"
-                class="progress-bar">
-            </div>
-
-        </div>
-
-
-        <div class="battle-info">
-
-            <div
-                class="lives"
-                id="lives">
-
-                ❤️❤️❤️
-
-            </div>
-
-
-            <div
-                class="combo"
-                id="combo-display">
-
-                🔥
-                <span id="combo">
-                    0
-                </span>
-                combo
-
-            </div>
-
-
-            <div class="current-xp">
-
-                ⭐
-                <span id="game-xp">
-                    0
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="question-box">
-
-            <p
-                class="question-topic"
-                id="question-topic">
-
-                Algebra
-
+                PLAY NOW
             </p>
 
 
-            <h2 id="question-text">
-
-                Loading question...
-
+            <h2>
+                Choose your game
             </h2>
 
         </div>
 
-
-        <div
-            id="answers"
-            class="answers">
-        </div>
+    </div>
 
 
-        <div
-            id="feedback"
-            class="feedback">
-        </div>
 
-    </section>
+    <div class="game-grid">
 
 
-    <!-- RESULTS -->
+        <!-- QUICK BATTLE -->
 
-    <section id="results-screen" class="screen">
+        <button
+            class="game-card featured"
+            onclick="openSubjects()">
 
-        <div class="results-header">
 
-            <div
-                class="result-icon"
-                id="result-icon">
+            <div class="game-icon">
+                ⚡
+            </div>
 
-                🏆
+
+            <div class="game-info">
+
+                <span class="game-tag">
+                    QUICK PLAY
+                </span>
+
+
+                <h3>
+                    Quick Battle
+                </h3>
+
+
+                <p>
+
+                    Answer questions, build your combo
+                    and survive the battle.
+
+                </p>
 
             </div>
 
-            <p class="small-heading">
-                BATTLE COMPLETE
+
+            <span class="play-arrow">
+                →
+            </span>
+
+        </button>
+
+
+
+        <!-- BOSS BATTLE -->
+
+        <button
+            class="game-card locked premium-game"
+            onclick="openPremiumGame('Boss Battle')">
+
+
+            <div class="game-icon">
+                👾
+            </div>
+
+
+            <div class="game-info">
+
+                <span class="game-tag">
+                    PREMIUM
+                </span>
+
+
+                <h3>
+                    Boss Battle
+                </h3>
+
+
+                <p>
+
+                    Take on difficult topics and
+                    defeat the ultimate revision bosses.
+
+                </p>
+
+            </div>
+
+
+            <span class="lock">
+                🔒
+            </span>
+
+        </button>
+
+
+
+        <!-- SPEED RUN -->
+
+        <button
+            class="game-card locked premium-game"
+            onclick="openPremiumGame('Speed Run')">
+
+
+            <div class="game-icon">
+                ⏱️
+            </div>
+
+
+            <div class="game-info">
+
+                <span class="game-tag">
+                    PREMIUM
+                </span>
+
+
+                <h3>
+                    Speed Run
+                </h3>
+
+
+                <p>
+
+                    How many questions can you solve
+                    before time runs out?
+
+                </p>
+
+            </div>
+
+
+            <span class="lock">
+                🔒
+            </span>
+
+        </button>
+
+
+    </div>
+
+
+
+    <!-- DAILY -->
+
+    <div class="daily-card">
+
+        <div>
+
+            <span class="game-tag">
+                DAILY CHALLENGE
+            </span>
+
+
+            <h3>
+                Keep the streak alive 🔥
+            </h3>
+
+
+            <p>
+
+                Daily challenges and streak rewards
+                are coming soon.
+
             </p>
 
-            <h1 id="result-title">
-                Nice work!
-            </h1>
-
-            <p id="result-message">
-                You made it through the battle.
-            </p>
-
         </div>
 
 
-        <div class="result-stats">
-
-            <div class="result-stat">
-
-                <span>
-                    ⭐
-                </span>
-
-                <strong id="final-xp">
-                    0
-                </strong>
-
-                <small>
-                    XP earned
-                </small>
-
-            </div>
-
-
-            <div class="result-stat">
-
-                <span>
-                    🎯
-                </span>
-
-                <strong id="final-score">
-                    0%
-                </strong>
-
-                <small>
-                    Accuracy
-                </small>
-
-            </div>
-
-
-            <div class="result-stat">
-
-                <span>
-                    🔥
-                </span>
-
-                <strong id="final-combo">
-                    0
-                </strong>
-
-                <small>
-                    Best combo
-                </small>
-
-            </div>
-
+        <div class="daily-icon">
+            🔥
         </div>
 
-
-        <div class="result-buttons">
-
-            <button
-                class="main-button"
-                onclick="restartGame()">
-
-                ⚡ Play Again
-
-            </button>
+    </div>
 
 
-            <button
-                class="secondary-button"
-                onclick="showScreen('home-screen')">
-
-                Back to Arcade
-
-            </button>
-
-        </div>
-
-    </section>
+</section>
 
 
 
+<!-- =====================================================
+     SUBJECTS
+===================================================== -->
 
-    <section id="premium-screen" class="screen">
+<section
+    id="subject-screen"
+    class="screen">
+
 
     <button
         class="back-button"
@@ -637,7 +382,453 @@
     </button>
 
 
+    <div class="page-title">
+
+        <p class="small-heading">
+            QUICK BATTLE
+        </p>
+
+
+        <h1>
+            Choose a subject
+        </h1>
+
+
+        <p>
+            Pick what you want to revise.
+        </p>
+
+    </div>
+
+
+    <div class="subject-grid">
+
+
+        <button
+            class="subject-card"
+            onclick="startGame('Maths')">
+
+
+            <span class="subject-icon">
+                🔢
+            </span>
+
+
+            <span>
+
+                <strong>
+                    Maths
+                </strong>
+
+
+                <small>
+                    Numbers, algebra & more
+                </small>
+
+            </span>
+
+
+            <span>
+                →
+            </span>
+
+        </button>
+
+
+
+        <button
+            class="subject-card"
+            onclick="startGame('Science')">
+
+
+            <span class="subject-icon">
+                🧪
+            </span>
+
+
+            <span>
+
+                <strong>
+                    Science
+                </strong>
+
+
+                <small>
+                    Biology, chemistry & physics
+                </small>
+
+            </span>
+
+
+            <span>
+                →
+            </span>
+
+        </button>
+
+
+
+        <button
+            class="subject-card disabled">
+
+
+            <span class="subject-icon">
+                📖
+            </span>
+
+
+            <span>
+
+                <strong>
+                    English
+                </strong>
+
+
+                <small>
+                    Coming soon
+                </small>
+
+            </span>
+
+
+            <span>
+                🔒
+            </span>
+
+        </button>
+
+
+
+        <button
+            class="subject-card disabled">
+
+
+            <span class="subject-icon">
+                🏛️
+            </span>
+
+
+            <span>
+
+                <strong>
+                    History
+                </strong>
+
+
+                <small>
+                    Coming soon
+                </small>
+
+            </span>
+
+
+            <span>
+                🔒
+            </span>
+
+        </button>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     GAME
+===================================================== -->
+
+<section
+    id="game-screen"
+    class="screen">
+
+
+    <div class="game-top">
+
+
+        <button
+            class="back-button"
+            onclick="leaveGame()">
+
+            ← Quit
+
+        </button>
+
+
+        <div class="question-counter">
+
+            <span id="question-number">
+                1
+            </span>
+
+            /10
+
+        </div>
+
+
+        <div class="timer">
+
+            ⏱️
+
+            <span id="timer">
+                15
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="progress-container">
+
+        <div
+            id="progress-bar"
+            class="progress-bar">
+
+        </div>
+
+    </div>
+
+
+
+    <div class="battle-info">
+
+
+        <div
+            class="lives"
+            id="lives">
+
+            ❤️❤️❤️
+
+        </div>
+
+
+        <div
+            class="combo"
+            id="combo-display">
+
+            🔥
+
+            <span id="combo">
+                0
+            </span>
+
+            combo
+
+        </div>
+
+
+        <div class="current-xp">
+
+            ⭐
+
+            <span id="game-xp">
+                0
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="question-box">
+
+
+        <p
+            class="question-topic"
+            id="question-topic">
+
+            Algebra
+
+        </p>
+
+
+        <h2 id="question-text">
+
+            Loading question...
+
+        </h2>
+
+    </div>
+
+
+
+    <div
+        id="answers"
+        class="answers">
+
+    </div>
+
+
+
+    <div
+        id="feedback"
+        class="feedback">
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     RESULTS
+===================================================== -->
+
+<section
+    id="results-screen"
+    class="screen">
+
+
+    <div class="results-header">
+
+
+        <div
+            class="result-icon"
+            id="result-icon">
+
+            🏆
+
+        </div>
+
+
+        <p class="small-heading">
+            BATTLE COMPLETE
+        </p>
+
+
+        <h1 id="result-title">
+            Nice work!
+        </h1>
+
+
+        <p id="result-message">
+            You made it through the battle.
+        </p>
+
+    </div>
+
+
+
+    <div class="result-stats">
+
+
+        <div class="result-stat">
+
+            <span>
+                ⭐
+            </span>
+
+
+            <strong id="final-xp">
+                0
+            </strong>
+
+
+            <small>
+                XP earned
+            </small>
+
+        </div>
+
+
+
+        <div class="result-stat">
+
+            <span>
+                🎯
+            </span>
+
+
+            <strong id="final-score">
+                0%
+            </strong>
+
+
+            <small>
+                Accuracy
+            </small>
+
+        </div>
+
+
+
+        <div class="result-stat">
+
+            <span>
+                🔥
+            </span>
+
+
+            <strong id="final-combo">
+                0
+            </strong>
+
+
+            <small>
+                Best combo
+            </small>
+
+        </div>
+
+
+    </div>
+
+
+
+    <div class="result-buttons">
+
+
+        <button
+            class="main-button"
+            onclick="restartGame()">
+
+            ⚡ Play Again
+
+        </button>
+
+
+        <button
+            class="secondary-button"
+            onclick="showScreen('home-screen')">
+
+            Back to Arcade
+
+        </button>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     PREMIUM
+===================================================== -->
+
+<section
+    id="premium-screen"
+    class="screen">
+
+
+    <button
+        class="back-button"
+        onclick="showScreen('home-screen')">
+
+        ← Back
+
+    </button>
+
+
+
     <div class="premium-screen-content">
+
 
         <div class="premium-icon">
             🔒
@@ -655,16 +846,21 @@
 
 
         <p id="premium-message">
+
             Unlock this game to access a harder
             revision experience.
+
         </p>
+
 
 
         <div class="premium-card">
 
+
             <div class="premium-card-icon">
-                👾
+                👑
             </div>
+
 
             <div>
 
@@ -672,9 +868,12 @@
                     ReviseGo Premium
                 </h2>
 
+
                 <p>
+
                     Unlock Boss Battle, Speed Run
                     and future premium revision modes.
+
                 </p>
 
             </div>
@@ -682,9 +881,10 @@
         </div>
 
 
+
         <button
             class="premium-button"
-            onclick="alert('Payments are coming soon!')">
+            onclick="unlockPremium()">
 
             🔓 Unlock Premium
 
@@ -692,20 +892,27 @@
 
 
         <p class="premium-note">
-            Payment system coming soon.
+
+            Premium games require a purchase.
+
         </p>
 
+
     </div>
+
 
 </section>
 
 
 
-<!-- =========================================================
-     PLAYER PROFILE
-========================================================= -->
+<!-- =====================================================
+     PROFILE
+===================================================== -->
 
-<section id="profile-screen" class="screen">
+<section
+    id="profile-screen"
+    class="screen">
+
 
     <button
         class="back-button"
@@ -716,11 +923,14 @@
     </button>
 
 
+
     <div class="profile-header">
+
 
         <div class="profile-avatar">
             👤
         </div>
+
 
         <div>
 
@@ -728,9 +938,11 @@
                 PLAYER PROFILE
             </p>
 
+
             <h1>
                 Revision Warrior
             </h1>
+
 
             <p>
                 Keep revising. Keep levelling up.
@@ -741,11 +953,14 @@
     </div>
 
 
+
     <!-- LEVEL -->
 
     <div class="profile-level-card">
 
+
         <div class="profile-level-top">
+
 
             <div>
 
@@ -753,11 +968,13 @@
                     CURRENT LEVEL
                 </span>
 
+
                 <h2 id="profile-level">
                     LEVEL 1
                 </h2>
 
             </div>
+
 
             <div class="profile-level-icon">
                 ⭐
@@ -766,14 +983,17 @@
         </div>
 
 
+
         <div class="profile-progress-container">
 
             <div
                 id="profile-level-progress"
                 class="profile-progress">
+
             </div>
 
         </div>
+
 
 
         <div class="profile-xp-row">
@@ -782,24 +1002,30 @@
                 0 / 500 XP
             </span>
 
+
             <span id="profile-total-xp">
                 0 Total XP
             </span>
 
         </div>
 
+
     </div>
+
 
 
     <!-- STATISTICS -->
 
-    <div class="section-heading profile-section-heading">
+    <div
+        class="section-heading profile-section-heading">
+
 
         <div>
 
             <p class="small-heading">
                 YOUR JOURNEY
             </p>
+
 
             <h2>
                 Player Statistics
@@ -810,7 +1036,9 @@
     </div>
 
 
+
     <div class="profile-stat-grid">
+
 
         <div class="profile-stat-card">
 
@@ -818,9 +1046,11 @@
                 🎮
             </span>
 
+
             <strong id="profile-games">
                 0
             </strong>
+
 
             <small>
                 Games Played
@@ -829,15 +1059,18 @@
         </div>
 
 
+
         <div class="profile-stat-card">
 
             <span class="profile-stat-icon">
                 📚
             </span>
 
+
             <strong id="profile-questions">
                 0
             </strong>
+
 
             <small>
                 Questions Answered
@@ -846,15 +1079,18 @@
         </div>
 
 
+
         <div class="profile-stat-card">
 
             <span class="profile-stat-icon">
                 🎯
             </span>
 
+
             <strong id="profile-correct">
                 0
             </strong>
+
 
             <small>
                 Correct Answers
@@ -863,15 +1099,18 @@
         </div>
 
 
+
         <div class="profile-stat-card">
 
             <span class="profile-stat-icon">
                 🔥
             </span>
 
+
             <strong id="profile-combo">
                 0
             </strong>
+
 
             <small>
                 Best Combo
@@ -879,28 +1118,35 @@
 
         </div>
 
+
+
+        <div class="profile-stat-card">
+
+            <span class="profile-stat-icon">
+                🔥
+            </span>
+
+
+            <strong id="profile-streak">
+                0
+            </strong>
+
+
+            <small>
+                Day Streak
+            </small>
+
+        </div>
+
+
     </div>
 
-    <div class="profile-stat-card">
-
-    <span class="profile-stat-icon">
-        🔥
-    </span>
-
-    <strong id="profile-streak">
-        0
-    </strong>
-
-    <small>
-        Day Streak
-    </small>
-
-</div>
 
 
     <!-- ACCURACY -->
 
     <div class="profile-accuracy-card">
+
 
         <div>
 
@@ -908,11 +1154,13 @@
                 ACCURACY
             </span>
 
+
             <h2 id="profile-accuracy">
                 0%
             </h2>
 
         </div>
+
 
         <div class="accuracy-icon">
             🎯
@@ -921,15 +1169,19 @@
     </div>
 
 
+
     <!-- ACHIEVEMENTS -->
 
-    <div class="section-heading profile-section-heading">
+    <div
+        class="section-heading profile-section-heading">
+
 
         <div>
 
             <p class="small-heading">
                 REWARDS
             </p>
+
 
             <h2>
                 Achievements
@@ -940,15 +1192,19 @@
     </div>
 
 
+
     <div
         id="profile-achievements"
         class="achievement-grid">
 
     </div>
 
+
 </section>
 
+
 </main>
+
 
 
 <footer>
@@ -960,8 +1216,12 @@
 </footer>
 
 
+
 <script src="data/questions.js"></script>
+
 <script src="app.js"></script>
 
+
 </body>
+
 </html>
