@@ -1265,12 +1265,25 @@ function updateGameStats() {
 
     if (livesElement) {
 
+        // CLAMPED, because String.repeat throws a RangeError on a negative count
+        // and takes the whole game down with it. `lives` can pass below zero if
+        // another answer lands between the last life being lost and the results
+        // screen appearing. Clamping is also what makes the value safe to draw.
+        //
+        // enhance.js replaces this text with SVG hearts immediately afterwards;
+        // this stays as the fallback for when that script hasn't loaded.
+        const shown =
+            Math.max(
+                0,
+                Math.min(3, lives)
+            );
+
         livesElement.textContent =
             "❤️".repeat(
-                lives
+                shown
             ) +
             "🖤".repeat(
-                3 - lives
+                3 - shown
             );
     }
 

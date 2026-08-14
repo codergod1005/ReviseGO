@@ -1,34 +1,86 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 /* =========================================================
-   REVISEGO
-   MAIN THEME
+   REVISEGO — ARCADE THEME
+   =========================================================
+
+   THE OLD THEME WAS PURPLE + PINK, which is the default look of
+   roughly every AI study app on the internet. This is built to
+   look like an arcade cabinet instead: deep ink, electric cyan,
+   coin gold, and a hot coral for streaks.
+
+   ONE RULE DRIVES THE WHOLE PALETTE:
+   green and red belong to ANSWERS. In a quiz, green means "you
+   got it right" and red means "you got it wrong" — so neither can
+   also be the brand colour, or feedback stops meaning anything.
+   That is why cyan leads and gold carries score, even though the
+   obvious "arcade" choice would have been neon red.
+
+   Everything is a token. No raw hex below the :root block.
 ========================================================= */
 
 :root {
-    --background: #0d0d12;
-    --background-light: #15151d;
+    /* ---- surfaces: cool ink, slightly blue-green ---- */
+    --bg:            #070B11;
+    --card:          #121B26;
+    --card-hi:       #1A2634;
+    --card-hover:    #1E2C3C;
 
-    --card: #191922;
-    --card-light: #23232e;
+    /* ---- text ---- */
+    --text:          #EDF4F9;
+    --text-soft:     #B7C6D4;
+    --muted:         #7F93A8;   /* 5.9:1 on --bg — passes AA for body text */
 
-    --text: #f7f7fa;
-    --muted: #9b9ba8;
+    /* ---- brand ---- */
+    --primary:       #22D3EE;   /* electric cyan — buttons, progress, focus */
+    --primary-dim:   #0E9EB8;
+    --primary-ink:   #032630;   /* text ON primary fills */
 
-    --purple: #8b5cf6;
-    --purple-light: #a78bfa;
+    /* ---- score + reward ---- */
+    --gold:          #FFC53D;   /* XP, coins, levels */
+    --gold-ink:      #2A1D00;
+    --coral:         #FF6B4A;   /* streaks, fire, urgency */
 
-    --pink: #ec4899;
-    --yellow: #facc15;
-    --green: #34d399;
-    --red: #fb7185;
-    --blue: #38bdf8;
-    --orange: #fb923c;
+    /* ---- answer feedback — RESERVED, never decorative ---- */
+    --correct:       #3DDC84;
+    --correct-ink:   #032B15;
+    --wrong:         #FF5C7A;
+    --wrong-ink:     #33020E;
 
-    --border: rgba(255, 255, 255, 0.08);
+    /* ---- lines + depth ---- */
+    --line:          rgba(255, 255, 255, 0.07);
+    --line-strong:   rgba(255, 255, 255, 0.14);
 
-    --shadow:
-        0 20px 50px rgba(0, 0, 0, 0.35);
+    --shadow-sm:     0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow:        0 14px 34px rgba(0, 0, 0, 0.45);
+    --shadow-lg:     0 28px 64px rgba(0, 0, 0, 0.55);
+
+    /* The arcade-sticker press effect: a hard offset edge rather than a
+       soft blur, so buttons read as physical things you push. */
+    --press:         0 4px 0 rgba(0, 0, 0, 0.45);
+    --press-primary: 0 4px 0 var(--primary-dim);
+
+    /* ---- shape + rhythm ---- */
+    --r-sm: 10px;
+    --r:    16px;
+    --r-lg: 22px;
+    --r-xl: 28px;
+
+    --space-1: 6px;
+    --space-2: 12px;
+    --space-3: 18px;
+    --space-4: 26px;
+    --space-5: 40px;
+    --space-6: 64px;
+
+    --font-display: "Space Grotesk", system-ui, sans-serif;
+    --font-body:    "Outfit", system-ui, -apple-system, sans-serif;
+
+    --ease: cubic-bezier(0.34, 1.3, 0.5, 1);   /* slight overshoot = playful */
+    --fast: 140ms;
+    --med:  240ms;
+
+    --maxw: 1080px;
 }
 
 
@@ -36,47 +88,132 @@
    RESET
 ========================================================= */
 
-* {
+*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-
 html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
 }
-
 
 body {
     min-height: 100vh;
-
-    background:
-        radial-gradient(
-            circle at 10% 0%,
-            rgba(139, 92, 246, 0.18),
-            transparent 30%
-        ),
-        radial-gradient(
-            circle at 90% 15%,
-            rgba(236, 72, 153, 0.12),
-            transparent 28%
-        ),
-        radial-gradient(
-            circle at 50% 100%,
-            rgba(56, 189, 248, 0.07),
-            transparent 35%
-        ),
-        var(--background);
-
+    background: var(--bg);
     color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
 
-    font-family: "Nunito", sans-serif;
+/* Atmosphere lives on a fixed layer so it never scrolls, never reflows, and
+   costs nothing to repaint. The faint grid is the arcade-cabinet reference. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 70% 50% at 12% -5%,  rgba(34, 211, 238, 0.16), transparent 60%),
+        radial-gradient(ellipse 60% 45% at 92% 8%,   rgba(255, 107, 74, 0.10), transparent 60%),
+        radial-gradient(ellipse 80% 50% at 50% 105%, rgba(255, 197, 61, 0.06), transparent 60%),
+        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+    background-size: auto, auto, auto, 52px 52px, 52px 52px;
+}
+
+img, svg { display: block; max-width: 100%; }
+
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+/* Every score in the app is a number that changes. Tabular figures stop the
+   layout twitching each time one ticks over. */
+strong, .num, [id$="-xp"], [id$="-score"], [id$="-combo"], #streak, #timer,
+#question-number, #combo, .level-xp, .profile-xp-row {
+    font-variant-numeric: tabular-nums;
 }
 
 
-button {
-    font: inherit;
+/* =========================================================
+   ICONS
+   Inline SVG via <use>. The old build used emoji as interface
+   icons, which render differently on every platform, cannot be
+   recoloured, and are read aloud as their unicode name by screen
+   readers ("fire", "collision") in place of the thing they label.
+========================================================= */
+
+.icon {
+    width: 1em;
+    height: 1em;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.icon-fill { fill: currentColor; stroke: none; }
+
+
+/* =========================================================
+   TYPOGRAPHY
+========================================================= */
+
+h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+h1 { font-size: clamp(2rem, 5.5vw, 3.1rem); }
+h2 { font-size: clamp(1.35rem, 3vw, 1.85rem); }
+h3 { font-size: 1.1rem; }
+
+p { color: var(--text-soft); }
+
+.small-heading {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: var(--space-1);
+}
+
+.game-tag {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 10px;
+    margin-bottom: 8px;
+}
+
+
+/* =========================================================
+   FOCUS — visible, always. Never remove without replacing.
+========================================================= */
+
+:focus { outline: none; }
+
+:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: var(--r-sm);
 }
 
 
@@ -85,188 +222,260 @@ button {
 ========================================================= */
 
 .top-bar {
-    width: 100%;
-    max-width: 1150px;
-
-    margin: auto;
-
-    padding: 22px 24px;
-
+    position: sticky;
+    top: 0;
+    z-index: 40;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: 14px clamp(14px, 4vw, 30px);
+    background: rgba(7, 11, 17, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
 }
-
 
 .logo {
-    font-family: "Baloo 2", sans-serif;
-
-    font-size: 32px;
-    font-weight: 800;
-
-    letter-spacing: -1px;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
 }
 
+.logo span { color: var(--text); }
 
 .logo strong {
-    color: var(--purple);
+    color: var(--primary);
+    /* The one glow in the app, on the one word that is the brand. */
+    text-shadow: 0 0 22px rgba(34, 211, 238, 0.55);
 }
-
 
 .player-stats {
     display: flex;
-
-    gap: 10px;
-
     align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
 
-
-.player-stats span {
+.player-stats > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
     background: var(--card);
-
-    border: 1px solid var(--border);
-
-    padding: 8px 13px;
-
-    border-radius: 12px;
-
-    font-size: 14px;
-
-    font-weight: 800;
-
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--line);
+    border-radius: 999px;
 }
+
+.player-stats > span:first-child { color: var(--coral); }
+.player-stats > span:nth-child(2) { color: var(--gold); }
+
+.player-stats .icon { width: 1.05em; height: 1.05em; }
+
+.corner-level {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--primary-ink) !important;
+    background: var(--primary) !important;
+    border-color: transparent !important;
+}
+
+.profile-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 9px 16px;
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    font-weight: 600;
+    transition: background var(--fast), border-color var(--fast), transform var(--fast);
+}
+
+.profile-button:hover { background: var(--card-hover); border-color: var(--primary); }
+.profile-button:active { transform: translateY(1px); }
 
 
 /* =========================================================
-   MAIN
+   LAYOUT + SCREENS
 ========================================================= */
 
 main {
-    width: 100%;
-
-    max-width: 1150px;
-
-    margin: auto;
-
-    padding: 30px 24px 70px;
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: var(--space-5) clamp(14px, 4vw, 30px) var(--space-6);
 }
 
-
-/* =========================================================
-   SCREENS
-========================================================= */
-
-.screen {
-    display: none;
-}
-
+.screen { display: none; }
 
 .screen.active {
     display: block;
-
-    animation: screenIn 0.35s ease;
+    animation: screen-in var(--med) var(--ease);
 }
 
+@keyframes screen-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+}
 
-@keyframes screenIn {
+.section-heading { margin: var(--space-5) 0 var(--space-3); }
 
-    from {
-        opacity: 0;
+.page-title { margin-bottom: var(--space-4); }
+.page-title h1 { margin-bottom: 6px; }
 
-        transform:
-            translateY(15px);
-    }
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 9px 18px 9px 14px;
+    margin-bottom: var(--space-3);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text-soft);
+    font-weight: 600;
+    transition: transform var(--fast), color var(--fast), border-color var(--fast);
+}
 
-    to {
-        opacity: 1;
-
-        transform:
-            translateY(0);
-    }
+.back-button:hover {
+    color: var(--text);
+    border-color: var(--line-strong);
+    transform: translateX(-3px);
 }
 
 
 /* =========================================================
-   HOME HERO
+   HERO
 ========================================================= */
 
-.hero {
-    padding: 60px 0 45px;
+.hero { margin-bottom: var(--space-5); }
 
-    max-width: 750px;
-}
+.hero h1 { margin-bottom: var(--space-2); }
 
-
-.small-heading {
-    color: var(--purple-light);
-
-    font-size: 30px;
-
-    font-weight: 800;
-
-    letter-spacing: 2px;
-
-    margin-bottom: 8px;
-
-    margin-top: 10px;
-}
-
-
-.hero h1 {
-    font-family: "Baloo 2", sans-serif;
-
-    font-size: clamp(48px, 8vw, 82px);
-
-    line-height: 0.95;
-
-    letter-spacing: -3px;
-
-    margin-bottom: 25px;
-}
-
-
+/* The payoff line gets the gradient, not the whole headline — one accent,
+   used once, reads as deliberate rather than decorative. */
 .hero h1 span {
-    background:
-        linear-gradient(
-            90deg,
-            var(--purple),
-            var(--pink)
-        );
-
-    background-clip: text;
+    background: linear-gradient(100deg, var(--primary) 10%, var(--gold) 90%);
     -webkit-background-clip: text;
-
+    background-clip: text;
     color: transparent;
 }
 
-
 .hero-text {
-    max-width: 560px;
-
-    color: var(--muted);
-
-    font-size: 18px;
-
-    line-height: 1.6;
+    max-width: 46ch;
+    font-size: 1.05rem;
 }
 
 
 /* =========================================================
-   SECTION HEADINGS
+   CARD BASE
 ========================================================= */
 
-.section-heading {
-    margin-bottom: 20px;
+.level-card,
+.daily-card,
+.profile-level-card,
+.profile-accuracy-card,
+.premium-card,
+.question-box,
+.stat-tile,
+.mistake-card,
+.subject-bar-row,
+.goal-card {
+    position: relative;
+    background: linear-gradient(180deg, var(--card-hi), var(--card));
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow);
+}
+
+/* A 1px light edge along the top of every card. It is what makes a flat
+   rectangle read as a raised surface. */
+.level-card::before,
+.daily-card::before,
+.profile-level-card::before,
+.question-box::before,
+.goal-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
 }
 
 
-.section-heading h2 {
-    font-family: "Baloo 2", sans-serif;
+/* =========================================================
+   LEVEL CARD
+========================================================= */
 
-    font-size: 30px;
+.level-card { padding: var(--space-4); }
+
+.level-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
 }
+
+.player-level,
+#profile-level {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--gold);
+}
+
+.level-badge,
+.profile-level-icon {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    font-size: 1.5rem;
+    color: var(--gold-ink);
+    background: linear-gradient(150deg, var(--gold), var(--coral));
+    border-radius: var(--r);
+    box-shadow: 0 8px 22px rgba(255, 197, 61, 0.28);
+}
+
+.level-progress-container,
+.profile-progress-container,
+.progress-container {
+    height: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.level-progress,
+.profile-progress,
+.progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), var(--gold));
+    box-shadow: 0 0 16px rgba(34, 211, 238, 0.5);
+    transition: width 600ms var(--ease);
+}
+
+.level-card-bottom,
+.profile-xp-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-top: 10px;
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+
+.level-xp { color: var(--gold); font-weight: 700; }
 
 
 /* =========================================================
@@ -275,299 +484,140 @@ main {
 
 .game-grid {
     display: grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--space-3);
 }
-
 
 .game-card {
-    position: relative;
-
-    min-height: 250px;
-
-    padding: 25px;
-
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
     text-align: left;
-
-    border:
-        1px solid var(--border);
-
-    border-radius: 24px;
-
-    background: var(--card);
-
-    color: var(--text);
-
-    cursor: pointer;
-
-    transition:
-        transform 0.2s ease,
-        border-color 0.2s ease,
-        background 0.2s ease,
-        box-shadow 0.2s ease;
-
-    overflow: hidden;
+    background: linear-gradient(180deg, var(--card-hi), var(--card));
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--med) var(--ease), border-color var(--fast), box-shadow var(--med);
 }
-
 
 .game-card:hover {
-    transform: translateY(-5px);
-
-    border-color:
-        rgba(139, 92, 246, 0.6);
-
-    background: var(--card-light);
-
-    box-shadow:
-        0 15px 35px rgba(0, 0, 0, 0.25);
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow), 0 0 0 1px rgba(34, 211, 238, 0.25);
 }
 
+.game-card:active { transform: translateY(-1px); }
 
+/* The featured card spans the row on wide screens and carries the brand edge,
+   so "the thing to press" is obvious without a second call to action. */
 .game-card.featured {
+    grid-column: 1 / -1;
+    border-color: rgba(34, 211, 238, 0.35);
     background:
-        radial-gradient(
-            circle at 80% 15%,
-            rgba(139, 92, 246, 0.4),
-            transparent 45%
-        ),
-        radial-gradient(
-            circle at 20% 100%,
-            rgba(236, 72, 153, 0.12),
-            transparent 40%
-        ),
-        var(--card);
+        radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.14), transparent 55%),
+        linear-gradient(180deg, var(--card-hi), var(--card));
 }
-
 
 .game-icon {
-    width: 55px;
-    height: 55px;
-
     display: grid;
-
     place-items: center;
-
-    border-radius: 16px;
-
-    background:
-        rgba(255, 255, 255, 0.08);
-
-    font-size: 27px;
-
-    margin-bottom: 30px;
+    width: 58px;
+    height: 58px;
+    font-size: 1.5rem;
+    color: var(--primary);
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.28);
+    border-radius: var(--r);
 }
 
-
-.game-tag {
-    display: block;
-
-    color: var(--purple-light);
-
-    font-size: 11px;
-
-    font-weight: 800;
-
-    letter-spacing: 1.5px;
-
-    margin-bottom: 6px;
+.game-card.featured .game-icon {
+    color: var(--primary-ink);
+    background: var(--primary);
+    border-color: transparent;
 }
 
-
-.game-info h3 {
-    font-family: "Baloo 2", sans-serif;
-
-    font-size: 25px;
-
-    margin-bottom: 8px;
-}
-
-
-.game-info p {
-    color: var(--muted);
-
-    font-size: 14px;
-
-    line-height: 1.5;
-}
-
+.game-info { flex: 1; min-width: 0; }
+.game-info h3 { margin-bottom: 3px; }
+.game-info p { font-size: 0.88rem; color: var(--muted); }
 
 .play-arrow {
-    position: absolute;
-
-    right: 22px;
-    bottom: 22px;
-
-    width: 38px;
-    height: 38px;
-
-    display: grid;
-
-    place-items: center;
-
-    border-radius: 50%;
-
-    background: var(--purple);
-
-    font-size: 20px;
-
-    transition: 0.2s ease;
+    color: var(--primary);
+    font-size: 1.3rem;
+    transition: transform var(--med) var(--ease);
 }
 
+.game-card:hover .play-arrow { transform: translateX(5px); }
 
-.game-card:hover .play-arrow {
-    transform: translateX(4px);
-}
+.game-card.locked { opacity: 0.72; }
+.game-card.locked:hover { opacity: 1; border-color: var(--gold); }
+.game-card.locked .game-icon { color: var(--gold); background: rgba(255, 197, 61, 0.1); border-color: rgba(255, 197, 61, 0.25); }
 
-
-.lock {
-    position: absolute;
-
-    right: 22px;
-    bottom: 22px;
-
-    opacity: 0.4;
-}
-
-
-.locked {
-    cursor: not-allowed;
-
-    opacity: 0.6;
-}
-
-
-.locked:hover {
-    transform: none;
-
-    border-color: var(--border);
-
-    background: var(--card);
-
-    box-shadow: none;
-}
+.lock { color: var(--gold); font-size: 1.1rem; }
 
 
 /* =========================================================
-   DAILY CHALLENGE
+   DAILY GOAL
 ========================================================= */
 
-.daily-card {
-    margin-top: 20px;
-
-    padding: 25px;
-
-    border:
-        1px solid var(--border);
-
-    border-radius: 24px;
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(250, 204, 21, 0.08),
-            rgba(236, 72, 153, 0.05)
-        ),
-        var(--card);
-
+.daily-card,
+.goal-card {
     display: flex;
-
-    justify-content: space-between;
-
     align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    margin-top: var(--space-3);
 }
 
-
-.daily-card h3 {
-    font-family: "Baloo 2", sans-serif;
-
-    font-size: 22px;
-
-    margin-bottom: 4px;
-}
-
-
-.daily-card p {
-    color: var(--muted);
-
-    font-size: 14px;
-}
-
+.daily-card h3 { margin-bottom: 4px; }
+.daily-card p { font-size: 0.9rem; color: var(--muted); }
 
 .daily-icon {
-    font-size: 42px;
-
-    animation:
-        flameFloat 2s ease-in-out infinite;
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    flex: 0 0 auto;
+    font-size: 1.6rem;
+    color: var(--coral);
+    background: rgba(255, 107, 74, 0.12);
+    border: 1px solid rgba(255, 107, 74, 0.28);
+    border-radius: var(--r);
 }
 
-
-@keyframes flameFloat {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-5px);
-    }
+/* Daily goal ring — conic-gradient so progress needs no extra element. */
+.goal-ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 74px;
+    height: 74px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary) calc(var(--pct, 0) * 1%), rgba(255, 255, 255, 0.08) 0);
+    transition: background 600ms var(--ease);
 }
 
-
-/* =========================================================
-   BACK BUTTON
-========================================================= */
-
-.back-button {
-    border: none;
-
-    background: transparent;
-
-    color: var(--muted);
-
-    cursor: pointer;
-
-    font-weight: 800;
-
-    margin-bottom: 35px;
-
-    transition: 0.2s ease;
+.goal-ring::after {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    background: var(--card);
+    border-radius: 50%;
 }
 
-
-.back-button:hover {
-    color: var(--text);
-
-    transform: translateX(-3px);
+.goal-ring span {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--primary);
 }
 
-
-/* =========================================================
-   PAGE TITLE
-========================================================= */
-
-.page-title {
-    margin-bottom: 35px;
-}
-
-
-.page-title h1 {
-    font-family: "Baloo 2", sans-serif;
-
-    font-size: 55px;
-
-    line-height: 1;
-
-    margin-bottom: 10px;
-}
-
-
-.page-title p:last-child {
-    color: var(--muted);
-}
+.goal-ring.done { background: conic-gradient(var(--correct) 100%, var(--correct) 0); }
+.goal-ring.done span { color: var(--correct); }
 
 
 /* =========================================================
@@ -576,548 +626,242 @@ main {
 
 .subject-grid {
     display: grid;
-
-    grid-template-columns:
-        repeat(2, 1fr);
-
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-2);
 }
-
 
 .subject-card {
-    width: 100%;
-
-    padding: 20px;
-
-    border-radius: 20px;
-
-    border:
-        1px solid var(--border);
-
-    background: var(--card);
-
-    color: var(--text);
-
-    display: grid;
-
-    grid-template-columns:
-        55px 1fr auto;
-
+    display: flex;
     align-items: center;
-
-    gap: 15px;
-
+    gap: var(--space-3);
+    padding: var(--space-3);
     text-align: left;
-
-    cursor: pointer;
-
-    transition: 0.2s ease;
-}
-
-
-.subject-card:hover {
-    transform: translateY(-3px);
-
-    border-color:
-        rgba(139, 92, 246, 0.5);
-
-    background: var(--card-light);
-
-    box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.2);
-}
-
-
-.subject-card.disabled {
-    opacity: 0.45;
-
-    cursor: not-allowed;
-}
-
-
-.subject-card.disabled:hover {
-    transform: none;
-
-    border-color: var(--border);
-
     background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    transition: transform var(--med) var(--ease), border-color var(--fast), background var(--fast);
 }
 
+.subject-card:hover:not(.disabled) {
+    transform: translateY(-3px);
+    background: var(--card-hover);
+    border-color: var(--primary);
+}
+
+.subject-card > span:nth-child(2) { flex: 1; min-width: 0; }
+.subject-card strong { display: block; font-size: 1.02rem; }
+.subject-card small { color: var(--muted); font-size: 0.83rem; }
 
 .subject-icon {
-    width: 55px;
-    height: 55px;
-
     display: grid;
-
     place-items: center;
-
-    border-radius: 15px;
-
-    background:
-        rgba(255, 255, 255, 0.07);
-
-    font-size: 25px;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 auto;
+    font-size: 1.2rem;
+    color: var(--primary);
+    background: rgba(34, 211, 238, 0.1);
+    border-radius: 12px;
 }
 
-
-.subject-card strong {
-    display: block;
-
-    font-family: "Baloo 2", sans-serif;
-
-    font-size: 22px;
-}
-
-
-.subject-card small {
-    display: block;
-
-    color: var(--muted);
-
-    margin-top: 2px;
-}
+.subject-card.disabled { opacity: 0.45; cursor: not-allowed; }
+.subject-card.disabled .subject-icon { color: var(--muted); background: rgba(255, 255, 255, 0.05); }
 
 
 /* =========================================================
-   GAME HEADER
+   GAME SCREEN
 ========================================================= */
 
 .game-top {
-    display: grid;
-
-    grid-template-columns:
-        1fr auto 1fr;
-
+    display: flex;
     align-items: center;
-
-    margin-bottom: 15px;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
 }
 
-
-.game-top .back-button {
-    margin: 0;
-}
-
+.game-top .back-button { margin-bottom: 0; }
 
 .question-counter {
-    font-weight: 800;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--muted);
 }
 
+.question-counter span { color: var(--text); font-size: 1.15rem; }
 
 .timer {
-    justify-self: end;
-
-    padding: 8px 14px;
-
-    border-radius: 12px;
-
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 15px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--primary);
     background: var(--card);
-
-    border:
-        1px solid var(--border);
-
-    font-weight: 800;
-
-    transition: 0.2s ease;
+    border: 1px solid var(--line);
+    border-radius: 999px;
 }
 
-
-.timer.warning {
-    color: var(--red);
-
-    border-color: var(--red);
-
-    animation:
-        timerPulse 0.5s infinite alternate;
+/* Urgency is carried by colour AND a pulse, so it still reads for anyone who
+   cannot distinguish the colour shift. */
+.timer.low {
+    color: var(--wrong);
+    border-color: var(--wrong);
+    animation: tick 800ms steps(2, end) infinite;
 }
 
-
-@keyframes timerPulse {
-
-    from {
-        transform: scale(1);
-    }
-
-    to {
-        transform: scale(1.08);
-    }
+@keyframes tick {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.07); }
 }
-
-
-/* =========================================================
-   PROGRESS
-========================================================= */
-
-.progress-container {
-    height: 7px;
-
-    width: 100%;
-
-    background: var(--card);
-
-    border-radius: 20px;
-
-    overflow: hidden;
-
-    margin-bottom: 25px;
-}
-
-
-.progress-bar {
-    height: 100%;
-
-    width: 10%;
-
-    border-radius: inherit;
-
-    background:
-        linear-gradient(
-            90deg,
-            var(--purple),
-            var(--pink)
-        );
-
-    transition:
-        width 0.4s ease;
-}
-
-
-/* =========================================================
-   BATTLE INFO
-========================================================= */
 
 .battle-info {
     display: flex;
-
-    justify-content: space-between;
-
     align-items: center;
-
-    margin-bottom: 30px;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin: var(--space-3) 0;
 }
 
-
-.lives {
-    font-size: 20px;
-
-    transition: 0.2s ease;
+.lives, .combo, .current-xp {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    font-weight: 700;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
 }
 
-
-.lives.hit {
-    animation:
-        heartShake 0.35s ease;
-}
-
-
-@keyframes heartShake {
-
-    0% {
-        transform: translateX(0);
-    }
-
-    25% {
-        transform: translateX(-7px);
-    }
-
-    50% {
-        transform: translateX(7px);
-    }
-
-    75% {
-        transform: translateX(-5px);
-    }
-
-    100% {
-        transform: translateX(0);
-    }
-}
-
-
-.combo {
-    color: var(--yellow);
-
-    font-weight: 800;
-
-    transition: 0.2s ease;
-}
-
+.lives { color: var(--wrong); gap: 4px; }
+.combo { color: var(--coral); }
+.current-xp { color: var(--gold); }
 
 .combo.hot {
-    transform: scale(1.15);
-
-    text-shadow:
-        0 0 15px
-        rgba(250, 204, 21, 0.5);
+    border-color: var(--coral);
+    box-shadow: 0 0 20px rgba(255, 107, 74, 0.35);
 }
-
-
-.current-xp {
-    color: var(--yellow);
-
-    font-weight: 800;
-}
-
-
-/* =========================================================
-   QUESTION
-========================================================= */
 
 .question-box {
-    padding: 40px;
-
-    margin-bottom: 20px;
-
-    border-radius: 25px;
-
-    border:
-        1px solid var(--border);
-
-    background:
-        radial-gradient(
-            circle at 50% 0%,
-            rgba(139, 92, 246, 0.08),
-            transparent 45%
-        ),
-        var(--card);
-
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
     text-align: center;
-
-    box-shadow:
-        0 10px 40px rgba(0, 0, 0, 0.15);
 }
-
 
 .question-topic {
-    color: var(--purple-light);
-
-    font-size: 12px;
-
-    font-weight: 800;
-
-    letter-spacing: 2px;
-
-    margin-bottom: 18px;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 10px;
 }
 
-
-.question-box h2 {
-    max-width: 750px;
-
-    margin: auto;
-
-    font-family: "Baloo 2", sans-serif;
-
-    font-size:
-        clamp(28px, 5vw, 44px);
-
-    line-height: 1.15;
-}
+#question-text { font-size: clamp(1.2rem, 3.2vw, 1.7rem); }
 
 
-/* =========================================================
-   ANSWERS
-========================================================= */
+/* ---- answers ---- */
 
 .answers {
     display: grid;
-
-    grid-template-columns:
-        repeat(2, 1fr);
-
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: var(--space-2);
 }
-
 
 .answer-button {
     position: relative;
-
-    padding: 20px;
-
-    border-radius: 18px;
-
-    border:
-        1px solid var(--border);
-
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 15px 18px;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 600;
     background: var(--card);
-
-    color: var(--text);
-
-    cursor: pointer;
-
-    font-weight: 800;
-
-    transition:
-        transform 0.15s ease,
-        background 0.15s ease,
-        border-color 0.15s ease;
+    border: 2px solid var(--line);
+    border-radius: var(--r);
+    box-shadow: var(--press);
+    transition: transform var(--fast), border-color var(--fast), background var(--fast);
 }
 
+/* The 1-4 key hint doubles as an ordinal marker, so the keyboard shortcut is
+   discoverable instead of hidden. */
+.answer-button::before {
+    content: attr(data-key);
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 7px;
+}
 
-.answer-button:hover {
-    background: var(--card-light);
-
+.answer-button:hover:not(:disabled) {
+    background: var(--card-hover);
+    border-color: var(--primary);
     transform: translateY(-2px);
-
-    border-color:
-        rgba(139, 92, 246, 0.4);
 }
 
+.answer-button:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
 
-.answer-button:disabled {
-    cursor: default;
-}
-
+.answer-button:disabled { cursor: default; }
 
 .answer-button.correct {
-    background:
-        rgba(52, 211, 153, 0.18);
-
-    border-color: var(--green);
-
-    color: var(--green);
-
-    animation:
-        correctPop 0.35s ease;
+    color: var(--correct-ink);
+    background: var(--correct);
+    border-color: var(--correct);
+    box-shadow: 0 0 26px rgba(61, 220, 132, 0.4);
+    animation: pop 320ms var(--ease);
 }
 
+.answer-button.correct::before { background: rgba(0, 0, 0, 0.18); color: var(--correct-ink); }
 
 .answer-button.wrong {
-    background:
-        rgba(251, 113, 133, 0.18);
-
-    border-color: var(--red);
-
-    color: var(--red);
-
-    animation:
-        wrongShake 0.35s ease;
+    color: var(--wrong-ink);
+    background: var(--wrong);
+    border-color: var(--wrong);
+    animation: shake 380ms;
 }
 
+.answer-button.wrong::before { background: rgba(0, 0, 0, 0.18); color: var(--wrong-ink); }
 
-@keyframes correctPop {
-
-    0% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.04);
-    }
-
-    100% {
-        transform: scale(1);
-    }
+@keyframes pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
-
-@keyframes wrongShake {
-
-    0% {
-        transform: translateX(0);
-    }
-
-    25% {
-        transform: translateX(-7px);
-    }
-
-    50% {
-        transform: translateX(7px);
-    }
-
-    75% {
-        transform: translateX(-5px);
-    }
-
-    100% {
-        transform: translateX(0);
-    }
+@keyframes shake {
+    0%, 100%   { transform: translateX(0); }
+    20%, 60%   { transform: translateX(-7px); }
+    40%, 80%   { transform: translateX(7px); }
 }
-
-
-/* =========================================================
-   FEEDBACK
-========================================================= */
 
 .feedback {
-    min-height: 55px;
-
-    margin-top: 15px;
-
-    padding: 15px;
-
-    border-radius: 15px;
-
+    margin-top: var(--space-3);
+    padding: 0;
+    font-weight: 600;
     text-align: center;
-
-    font-weight: 800;
-
-    line-height: 1.5;
+    color: var(--text-soft);
 }
 
-
-.feedback.correct {
-    color: var(--green);
-}
-
-
-.feedback.wrong {
-    color: var(--red);
-}
-
-
-/* =========================================================
-   XP POPUP
-========================================================= */
-
-.xp-popup {
-    position: fixed;
-
-    pointer-events: none;
-
-    z-index: 1000;
-
-    color: var(--yellow);
-
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 30px;
-
-    font-weight: 800;
-
-    animation:
-        xpFloat 0.9s ease forwards;
-}
-
-
-@keyframes xpFloat {
-
-    0% {
-        opacity: 0;
-
-        transform:
-            translateY(20px)
-            scale(0.7);
-    }
-
-    20% {
-        opacity: 1;
-
-        transform:
-            translateY(0)
-            scale(1.1);
-    }
-
-    100% {
-        opacity: 0;
-
-        transform:
-            translateY(-70px)
-            scale(1);
-    }
+.feedback:not(:empty) {
+    padding: var(--space-3);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--r-sm);
+    text-align: left;
+    animation: screen-in var(--fast) ease-out;
 }
 
 
@@ -1125,186 +869,468 @@ main {
    RESULTS
 ========================================================= */
 
-.results-header {
-    text-align: center;
-
-    padding: 50px 0 35px;
-}
-
+.results-header { text-align: center; margin-bottom: var(--space-4); }
 
 .result-icon {
-    font-size: 65px;
-
-    margin-bottom: 20px;
-
-    animation:
-        resultBounce 1.2s ease infinite;
+    display: grid;
+    place-items: center;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto var(--space-3);
+    font-size: 2.6rem;
+    background: linear-gradient(150deg, var(--primary), var(--gold));
+    color: var(--primary-ink);
+    border-radius: 50%;
+    box-shadow: 0 18px 46px rgba(34, 211, 238, 0.3);
+    animation: pop 480ms var(--ease);
 }
 
-
-@keyframes resultBounce {
-
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-8px);
-    }
-}
-
-
-.results-header h1 {
-    font-family: "Baloo 2", sans-serif;
-
-    font-size: 55px;
-
-    line-height: 1;
-
-    margin-bottom: 10px;
-}
-
-
-.results-header p:last-child {
-    color: var(--muted);
-}
-
-
-/* =========================================================
-   RESULT STATS
-========================================================= */
+#result-title { margin-bottom: 8px; }
 
 .result-stats {
     display: grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    gap: 15px;
-
-    max-width: 700px;
-
-    margin: auto;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
 }
 
-
-.result-stat {
-    padding: 25px;
-
-    border-radius: 20px;
-
-    background: var(--card);
-
-    border:
-        1px solid var(--border);
-
+.result-stat,
+.stat-tile,
+.profile-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: var(--space-3);
     text-align: center;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+}
 
-    transition: 0.2s ease;
+.result-stat > span:first-child,
+.profile-stat-icon {
+    font-size: 1.3rem;
+    color: var(--primary);
+}
+
+.result-stat strong,
+.stat-tile strong,
+.profile-stat-card strong {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    color: var(--text);
+}
+
+.result-stat small,
+.stat-tile small,
+.profile-stat-card small {
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+.result-stat:nth-child(1) strong { color: var(--gold); }
+.result-stat:nth-child(2) strong { color: var(--primary); }
+.result-stat:nth-child(3) strong { color: var(--coral); }
+
+.result-buttons {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 
-.result-stat:hover {
-    transform: translateY(-3px);
+/* =========================================================
+   BUTTONS
+========================================================= */
 
-    border-color:
-        rgba(139, 92, 246, 0.35);
+.main-button,
+.premium-button,
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 52px;
+    padding: 14px 30px;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 999px;
+    transition: transform var(--fast), box-shadow var(--fast), background var(--fast);
+}
+
+.main-button {
+    color: var(--primary-ink);
+    background: var(--primary);
+    box-shadow: var(--press-primary);
+}
+
+.main-button:hover { background: #4BDDF2; }
+
+/* Press the button INTO the page: translate down by exactly the offset shadow
+   and drop the shadow. It is the cheapest convincing tactile effect there is. */
+.main-button:active { transform: translateY(4px); box-shadow: none; }
+
+.premium-button {
+    color: var(--gold-ink);
+    background: linear-gradient(100deg, var(--gold), var(--coral));
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4);
+}
+
+.premium-button:active { transform: translateY(4px); box-shadow: none; }
+
+.secondary-button {
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+}
+
+.secondary-button:hover { background: var(--card-hover); border-color: var(--primary); }
+.secondary-button:active { transform: translateY(2px); }
+
+
+/* =========================================================
+   PREMIUM
+========================================================= */
+
+.premium-screen-content { text-align: center; max-width: 620px; margin: 0 auto; }
+
+.premium-icon {
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    margin: 0 auto var(--space-3);
+    font-size: 2.2rem;
+    color: var(--gold-ink);
+    background: linear-gradient(150deg, var(--gold), var(--coral));
+    border-radius: 50%;
+    box-shadow: 0 16px 40px rgba(255, 197, 61, 0.28);
+}
+
+.premium-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    margin: var(--space-4) 0;
+    text-align: left;
+    border-color: rgba(255, 197, 61, 0.3);
+}
+
+.premium-card-icon {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    flex: 0 0 auto;
+    font-size: 1.4rem;
+    color: var(--gold);
+    background: rgba(255, 197, 61, 0.12);
+    border-radius: var(--r);
+}
+
+.premium-card p { font-size: 0.88rem; color: var(--muted); }
+
+.premium-note { margin-top: var(--space-2); font-size: 0.8rem; color: var(--muted); }
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.profile-avatar {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    flex: 0 0 auto;
+    font-size: 1.9rem;
+    color: var(--primary-ink);
+    background: linear-gradient(150deg, var(--primary), var(--gold));
+    border-radius: 50%;
+}
+
+.profile-header p { font-size: 0.9rem; color: var(--muted); }
+
+.profile-level-card { padding: var(--space-4); margin-bottom: var(--space-4); }
+
+.profile-level-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.profile-section-heading { margin-top: var(--space-4); }
+
+.profile-stat-grid,
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-2);
+}
+
+.profile-accuracy-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    margin-top: var(--space-3);
+}
+
+#profile-accuracy { font-size: 2.4rem; color: var(--correct); }
+
+.accuracy-icon {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    flex: 0 0 auto;
+    font-size: 1.6rem;
+    color: var(--correct);
+    background: rgba(61, 220, 132, 0.12);
+    border-radius: var(--r);
 }
 
 
-.result-stat span {
-    display: block;
+/* =========================================================
+   ACHIEVEMENTS
+========================================================= */
 
-    font-size: 25px;
+.achievement-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: var(--space-2);
+}
 
+.achievement-icon,
+.achievement-info {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 14px var(--space-3);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    font-weight: 600;
+}
+
+.achievement-icon { color: var(--gold); border-color: rgba(255, 197, 61, 0.28); }
+
+.achievement-info.locked {
+    color: var(--muted);
+    opacity: 0.55;
+}
+
+
+/* =========================================================
+   PROGRESS SCREEN — accuracy per subject
+========================================================= */
+
+.subject-bar-row {
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+}
+
+.subject-bar-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: 9px;
+}
+
+.subject-bar-head strong { font-family: var(--font-display); font-size: 1rem; }
+
+.subject-bar-head span { font-size: 0.85rem; color: var(--muted); }
+
+.subject-bar-track {
+    height: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.subject-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), var(--correct));
+    transition: width 700ms var(--ease);
+}
+
+/* Below 50% the bar turns amber, so a weak subject is legible at a glance
+   without reading the number. */
+.subject-bar-fill.weak { background: linear-gradient(90deg, var(--coral), var(--gold)); }
+
+.empty-note {
+    padding: var(--space-4);
+    text-align: center;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--r);
+}
+
+
+/* =========================================================
+   MISTAKES / REVIEW
+========================================================= */
+
+.mistake-card {
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+    border-left: 4px solid var(--wrong);
+}
+
+.mistake-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 8px;
 }
 
-
-.result-stat strong {
-    display: block;
-
-    font-family: "Baloo 2", sans-serif;
-
-    font-size: 30px;
+.mistake-subject {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--coral);
 }
 
+.mistake-q { font-weight: 600; margin-bottom: 10px; }
 
-.result-stat small {
+.mistake-answer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.mistake-answer.yours { color: var(--wrong); }
+.mistake-answer.right { color: var(--correct); }
+
+.mistake-why {
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px solid var(--line);
+    font-size: 0.88rem;
     color: var(--muted);
 }
 
 
 /* =========================================================
-   RESULT BUTTONS
+   POPUPS — XP, combo, level up, achievements
 ========================================================= */
 
-.result-buttons {
-    max-width: 500px;
-
-    margin: 30px auto;
-
-    display: grid;
-
-    gap: 12px;
+.xp-popup,
+.streak-bonus-popup {
+    position: fixed;
+    left: 50%;
+    top: 34%;
+    z-index: 90;
+    transform: translateX(-50%);
+    padding: 11px 22px;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--gold-ink);
+    background: var(--gold);
+    border-radius: 999px;
+    box-shadow: 0 12px 34px rgba(255, 197, 61, 0.4);
+    pointer-events: none;
+    animation: float-up 1.1s ease-out forwards;
 }
 
-
-.main-button,
-.secondary-button {
-    border: none;
-
-    border-radius: 16px;
-
-    padding: 17px;
-
-    font-weight: 800;
-
-    cursor: pointer;
-
-    transition: 0.2s ease;
+@keyframes float-up {
+    0%   { opacity: 0; transform: translate(-50%, 14px) scale(0.85); }
+    22%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -62px) scale(0.95); }
 }
 
-
-.main-button {
-    background:
-        linear-gradient(
-            90deg,
-            var(--purple),
-            var(--pink)
-        );
-
-    color: white;
-
-    box-shadow:
-        0 10px 30px
-        rgba(139, 92, 246, 0.25);
-}
-
-
-.main-button:hover {
-    transform: translateY(-2px);
-
-    filter: brightness(1.1);
-}
-
-
-.secondary-button {
-    background: var(--card);
-
+.achievement-popup {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 95;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 15px 22px;
+    font-weight: 700;
     color: var(--text);
-
-    border:
-        1px solid var(--border);
+    background: var(--card-hi);
+    border: 1px solid var(--gold);
+    border-left: 5px solid var(--gold);
+    border-radius: var(--r);
+    box-shadow: var(--shadow-lg);
+    animation: slide-in 400ms var(--ease), fade-out 400ms ease-in 3.4s forwards;
 }
 
-
-.secondary-button:hover {
-    background: var(--card-light);
-
-    transform: translateY(-2px);
+@keyframes slide-in {
+    from { opacity: 0; transform: translateX(60px); }
+    to   { opacity: 1; transform: none; }
 }
+
+@keyframes fade-out {
+    to { opacity: 0; transform: translateX(40px); }
+}
+
+.level-up-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    background: rgba(7, 11, 17, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: screen-in var(--med) ease-out;
+}
+
+.level-up-content {
+    padding: var(--space-5);
+    text-align: center;
+    background: linear-gradient(180deg, var(--card-hi), var(--card));
+    border: 1px solid var(--gold);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg), 0 0 90px rgba(255, 197, 61, 0.22);
+    animation: pop 520ms var(--ease);
+}
+
+.level-up-stars { font-size: 2.6rem; margin-bottom: var(--space-2); }
+
+.level-up-label {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+.level-up-number {
+    font-family: var(--font-display);
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--gold);
+}
+
+.level-up-message { color: var(--text-soft); }
+
+.streak-bonus-fire { font-size: 1.2rem; }
 
 
 /* =========================================================
@@ -1312,1499 +1338,52 @@ main {
 ========================================================= */
 
 footer {
+    padding: var(--space-4);
     text-align: center;
-
-    padding: 25px;
-
-    color: #686875;
-
-    font-size: 13px;
-}
-
-
-/* =========================================================
-   LEVEL / XP EFFECTS
-========================================================= */
-
-.level-up {
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 999;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    pointer-events: none;
-
-    background:
-        rgba(0, 0, 0, 0.65);
-
-    animation:
-        levelOverlay 1.5s ease forwards;
-}
-
-
-.level-up-content {
-    text-align: center;
-
-    animation:
-        levelUpPop 1.2s ease forwards;
-}
-
-
-.level-up-content .level-icon {
-    font-size: 80px;
-
-    display: block;
-
-    margin-bottom: 10px;
-}
-
-
-.level-up-content h2 {
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 60px;
-
-    background:
-        linear-gradient(
-            90deg,
-            var(--yellow),
-            var(--orange),
-            var(--pink)
-        );
-
-    background-clip: text;
-    -webkit-background-clip: text;
-
-    color: transparent;
-}
-
-
-.level-up-content p {
-    color: white;
-
-    font-size: 20px;
-
-    font-weight: 800;
-}
-
-
-@keyframes levelOverlay {
-
-    0% {
-        opacity: 0;
-    }
-
-    15% {
-        opacity: 1;
-    }
-
-    80% {
-        opacity: 1;
-    }
-
-    100% {
-        opacity: 0;
-    }
-}
-
-
-@keyframes levelUpPop {
-
-    0% {
-        transform:
-            scale(0.4)
-            rotate(-5deg);
-
-        opacity: 0;
-    }
-
-    30% {
-        transform:
-            scale(1.15)
-            rotate(2deg);
-
-        opacity: 1;
-    }
-
-    55% {
-        transform:
-            scale(1);
-    }
-
-    100% {
-        transform:
-            scale(1.05);
-
-        opacity: 0;
-    }
-}
-
-
-/* =========================================================
-   XP BAR
-========================================================= */
-
-.xp-bar-container {
-    width: 100%;
-
-    height: 8px;
-
-    border-radius: 20px;
-
-    background:
-        rgba(255, 255, 255, 0.08);
-
-    overflow: hidden;
-
-    margin-top: 8px;
-}
-
-
-.xp-bar {
-    height: 100%;
-
-    width: 0%;
-
-    border-radius: inherit;
-
-    background:
-        linear-gradient(
-            90deg,
-            var(--purple),
-            var(--pink)
-        );
-
-    transition:
-        width 0.5s ease;
-}
-
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media (max-width: 800px) {
-
-    .top-bar {
-        padding: 18px;
-    }
-
-
-    .player-stats span {
-        font-size: 12px;
-
-        padding: 7px 9px;
-    }
-
-
-    main {
-        padding:
-            10px
-            18px
-            50px;
-    }
-
-
-    .hero {
-        padding:
-            45px
-            0
-            35px;
-    }
-
-
-    .hero h1 {
-        font-size: 55px;
-
-        letter-spacing: -2px;
-    }
-
-
-    .hero-text {
-        font-size: 16px;
-    }
-
-
-    .game-grid {
-        grid-template-columns: 1fr;
-    }
-
-
-    .game-card {
-        min-height: 190px;
-    }
-
-
-    .subject-grid {
-        grid-template-columns: 1fr;
-    }
-
-
-    .page-title h1 {
-        font-size: 45px;
-    }
-
-
-    .answers {
-        grid-template-columns: 1fr;
-    }
-
-
-    .question-box {
-        padding:
-            28px
-            20px;
-    }
-
-
-    .battle-info {
-        font-size: 13px;
-    }
-
-
-    .result-stats {
-        grid-template-columns: 1fr;
-    }
-}
-
-
-/* =========================================================
-   SMALL PHONES
-========================================================= */
-
-@media (max-width: 450px) {
-
-    .top-bar {
-        padding:
-            15px;
-    }
-
-
-    .logo {
-        font-size: 25px;
-    }
-
-
-    .player-stats {
-        gap: 5px;
-    }
-
-
-    .player-stats span {
-        padding:
-            6px
-            7px;
-
-        font-size: 11px;
-    }
-
-
-    .hero h1 {
-        font-size: 45px;
-    }
-
-
-    .game-top {
-        grid-template-columns:
-            1fr auto;
-
-        gap: 10px;
-    }
-
-
-    .question-counter {
-        justify-self: end;
-    }
-
-
-    .timer {
-        grid-column:
-            1 / -1;
-
-        justify-self: start;
-
-        margin-top: 5px;
-    }
-
-
-    .battle-info {
-        flex-wrap: wrap;
-
-        gap: 10px;
-    }
-
-
-    .question-box h2 {
-        font-size: 27px;
-    }
-
-
-    .question-box {
-        padding: 25px 16px;
-    }
-
-
-    .answer-button {
-        padding: 17px;
-    }
-
-
-    .results-header h1 {
-        font-size: 43px;
-    }
-
-
-    .result-icon {
-        font-size: 55px;
-    }
-}
-
-/* =========================
-   LEVEL CARD
-========================= */
-
-.level-card {
-    margin-top: 20px;
-    padding: 24px;
-
-    border-radius: 24px;
-
-    background:
-        radial-gradient(
-            circle at 90% 20%,
-            rgba(139, 92, 246, 0.18),
-            transparent 40%
-        ),
-        var(--card);
-
-    border: 1px solid var(--border);
-}
-
-.level-card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    margin-bottom: 20px;
-}
-
-.level-card h3 {
-    margin-top: 5px;
-
-    font-family: "Baloo 2", sans-serif;
-    font-size: 28px;
-}
-
-.level-badge {
-    width: 50px;
-    height: 50px;
-
-    display: grid;
-    place-items: center;
-
-    border-radius: 15px;
-
-    background: rgba(250, 204, 21, 0.12);
-
-    font-size: 24px;
-}
-
-.level-progress-container {
-    width: 100%;
-    height: 10px;
-
-    overflow: hidden;
-
-    border-radius: 20px;
-
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.level-progress {
-    height: 100%;
-
-    border-radius: inherit;
-
-    background: linear-gradient(
-        90deg,
-        var(--purple),
-        var(--pink)
-    );
-
-    transition: width 0.6s ease;
-}
-
-.level-card-bottom {
-    display: flex;
-    justify-content: space-between;
-
-    margin-top: 10px;
-
+    font-size: 0.85rem;
     color: var(--muted);
-
-    font-size: 13px;
-    font-weight: 800;
+    border-top: 1px solid var(--line);
 }
 
 
 /* =========================================================
-   PREMIUM SCREEN
+   RESPONSIVE
 ========================================================= */
 
-.premium-screen-content {
-    max-width: 650px;
-
-    margin: 0 auto;
-
-    padding: 50px 0;
-
-    text-align: center;
-}
-
-
-.premium-icon {
-    font-size: 70px;
-
-    margin-bottom: 20px;
-
-    animation:
-        premiumFloat 2s ease-in-out infinite;
-}
-
-
-.premium-screen-content h1 {
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: clamp(45px, 7vw, 70px);
-
-    line-height: 1;
-
-    margin-bottom: 15px;
-}
-
-
-.premium-screen-content > p:not(.small-heading):not(.premium-note) {
-    color: var(--muted);
-
-    line-height: 1.6;
-
-    max-width: 500px;
-
-    margin: 0 auto 30px;
-}
-
-
-.premium-card {
-    display: flex;
-
-    align-items: center;
-
-    gap: 20px;
-
-    padding: 25px;
-
-    margin-bottom: 20px;
-
-    text-align: left;
-
-    border-radius: 24px;
-
-    border: 1px solid rgba(
-        139,
-        92,
-        246,
-        0.35
-    );
-
-    background:
-        radial-gradient(
-            circle at 90% 10%,
-            rgba(
-                139,
-                92,
-                246,
-                0.2
-            ),
-            transparent 45%
-        ),
-        var(--card);
-}
-
-
-.premium-card-icon {
-    width: 60px;
-    height: 60px;
-
-    display: grid;
-
-    place-items: center;
-
-    flex-shrink: 0;
-
-    border-radius: 18px;
-
-    background:
-        rgba(
-            139,
-            92,
-            246,
-            0.15
-        );
-
-    font-size: 30px;
-}
-
-
-.premium-card h2 {
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 25px;
-
-    margin-bottom: 4px;
-}
-
-
-.premium-card p {
-    color: var(--muted);
-
-    font-size: 14px;
-
-    line-height: 1.5;
-}
-
-
-.premium-button {
-    width: 100%;
-
-    padding: 17px;
-
-    border: none;
-
-    border-radius: 16px;
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--purple),
-            var(--pink)
-        );
-
-    color: white;
-
-    font-weight: 900;
-
-    cursor: pointer;
-
-    transition:
-        transform 0.2s ease,
-        filter 0.2s ease;
-}
-
-
-.premium-button:hover {
-    transform: translateY(-3px);
-
-    filter: brightness(1.1);
-}
-
-
-.premium-note {
-    margin-top: 12px;
-
-    color: var(--muted);
-
-    font-size: 12px;
-}
-
-
-@keyframes premiumFloat {
-
-    0% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-8px);
-    }
-
-    100% {
-        transform: translateY(0);
-    }
-}
-
-
-@media (max-width: 500px) {
-
-    .premium-screen-content {
-        padding-top: 30px;
-    }
-
-
-    .premium-card {
-        align-items: flex-start;
-
-        padding: 20px;
-    }
-
-
-    .premium-card-icon {
-        width: 50px;
-        height: 50px;
-
-        font-size: 25px;
-    }
-}
-
-
-.achievement-popup {
-
-    position: fixed;
-
-    top: 20px;
-    right: 20px;
-
-    background: #191922;
-
-    border: 2px solid #8b5cf6;
-
-    padding: 18px;
-
-    border-radius: 18px;
-
-    z-index: 9999;
-
-    font-weight: 800;
-
-    animation: slideIn .3s ease;
-}
-
-@keyframes slideIn {
-
-    from {
-
-        opacity: 0;
-
-        transform:
-            translateX(40px);
-    }
-
-    to {
-
-        opacity: 1;
-
-        transform:
-            translateX(0);
-    }
-}
-
-/* =========================================================
-   PLAYER PROFILE
-========================================================= */
-
-.profile-header {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 25px;
-
-    margin:
-        30px
-        0
-        35px;
-
-}
-
-
-.profile-avatar {
-
-    width: 90px;
-
-    height: 90px;
-
-    display: grid;
-
-    place-items: center;
-
-    flex-shrink: 0;
-
-    border-radius: 28px;
-
-    background:
-        linear-gradient(
-            135deg,
-            var(--purple),
-            var(--pink)
-        );
-
-    font-size: 42px;
-
-    box-shadow:
-        0 15px 35px
-        rgba(139, 92, 246, 0.3);
-
-}
-
-
-.profile-header h1 {
-
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 50px;
-
-    line-height: 1;
-
-    margin-bottom: 8px;
-
-}
-
-
-.profile-header p:last-child {
-
-    color:
-        var(--muted);
-
-}
-
-
-.profile-level-card {
-
-    padding: 28px;
-
-    border-radius: 25px;
-
-    background:
-        radial-gradient(
-            circle at 90% 20%,
-            rgba(139, 92, 246, 0.2),
-            transparent 40%
-        ),
-        var(--card);
-
-    border:
-        1px solid var(--border);
-
-}
-
-
-.profile-level-top {
-
-    display: flex;
-
-    justify-content:
-        space-between;
-
-    align-items: center;
-
-    margin-bottom: 25px;
-
-}
-
-
-.profile-level-top h2 {
-
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 35px;
-
-}
-
-
-.profile-level-icon {
-
-    width: 60px;
-
-    height: 60px;
-
-    display: grid;
-
-    place-items: center;
-
-    border-radius: 18px;
-
-    background:
-        rgba(250, 204, 21, 0.12);
-
-    font-size: 28px;
-
-}
-
-
-.profile-progress-container {
-
-    width: 100%;
-
-    height: 12px;
-
-    background:
-        rgba(255,255,255,0.08);
-
-    border-radius: 20px;
-
-    overflow: hidden;
-
-}
-
-
-.profile-progress {
-
-    height: 100%;
-
-    width: 0%;
-
-    border-radius: inherit;
-
-    background:
-        linear-gradient(
-            90deg,
-            var(--purple),
-            var(--pink)
-        );
-
-    transition:
-        width 0.6s ease;
-
-}
-
-
-.profile-xp-row {
-
-    display: flex;
-
-    justify-content:
-        space-between;
-
-    margin-top: 12px;
-
-    color:
-        var(--muted);
-
-    font-size: 14px;
-
-    font-weight: 800;
-
-}
-
-
-.profile-section-heading {
-
-    margin-top: 40px;
-
-}
-
-
-.profile-stat-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(4, 1fr);
-
-    gap: 15px;
-
-}
-
-
-.profile-stat-card {
-
-    padding: 25px;
-
-    border:
-        1px solid var(--border);
-
-    border-radius: 22px;
-
-    background:
-        var(--card);
-
-    text-align: center;
-
-}
-
-
-.profile-stat-icon {
-
-    display: block;
-
-    font-size: 30px;
-
-    margin-bottom: 12px;
-
-}
-
-
-.profile-stat-card strong {
-
-    display: block;
-
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 35px;
-
-}
-
-
-.profile-stat-card small {
-
-    color:
-        var(--muted);
-
-    font-weight: 700;
-
-}
-
-
-.profile-accuracy-card {
-
-    margin-top: 15px;
-
-    padding: 25px;
-
-    display: flex;
-
-    justify-content:
-        space-between;
-
-    align-items: center;
-
-    border:
-        1px solid var(--border);
-
-    border-radius: 22px;
-
-    background:
-        var(--card);
-
-}
-
-
-.profile-accuracy-card h2 {
-
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 42px;
-
-}
-
-
-.accuracy-icon {
-
-    font-size: 45px;
-
-}
-
-
-.achievement-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(2, 1fr);
-
-    gap: 15px;
-
-}
-
-
-.achievement-card {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 18px;
-
-    padding: 20px;
-
-    border-radius: 20px;
-
-    border:
-        1px solid var(--border);
-
-    background:
-        var(--card);
-
-}
-
-
-.achievement-card.unlocked {
-
-    border-color:
-        rgba(139, 92, 246, 0.5);
-
-}
-
-
-.achievement-card.locked {
-
-    opacity: 0.45;
-
-}
-
-
-.achievement-icon {
-
-    width: 55px;
-
-    height: 55px;
-
-    display: grid;
-
-    place-items: center;
-
-    flex-shrink: 0;
-
-    border-radius: 16px;
-
-    background:
-        rgba(255,255,255,0.07);
-
-    font-size: 25px;
-
-}
-
-
-.achievement-info strong {
-
-    display: block;
-
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 20px;
-
-}
-
-
-.achievement-info small {
-
-    color:
-        var(--muted);
-
-}
-
-
-.profile-button {
-
-    border: none;
-
-    background:
-        var(--purple);
-
-    color:
-        white;
-
-    padding:
-        8px 13px;
-
-    border-radius: 12px;
-
-    cursor: pointer;
-
-    font-weight: 800;
-
-    transition:
-        0.2s ease;
-
-}
-
-
-.profile-button:hover {
-
-    transform:
-        translateY(-2px);
-
-    background:
-        var(--purple-light);
-
-}
-
-
-@media (max-width: 800px) {
-
-    .profile-stat-grid {
-
-        grid-template-columns:
-            repeat(2, 1fr);
-
-    }
-
-    .achievement-grid {
-
-        grid-template-columns:
-            1fr;
-
-    }
-
-}
-
-
-@media (max-width: 550px) {
-
-    .profile-header {
-
-        align-items: flex-start;
-
-    }
-
-    .profile-avatar {
-
-        width: 65px;
-
-        height: 65px;
-
-        border-radius: 20px;
-
-        font-size: 30px;
-
-    }
-
-    .profile-header h1 {
-
-        font-size: 35px;
-
-    }
-
-    .profile-xp-row {
-
-        flex-direction: column;
-
-        gap: 5px;
-
-    }
-
-    .profile-stat-grid {
-
-        grid-template-columns:
-            1fr 1fr;
-
-    }
-
+@media (max-width: 640px) {
+    .top-bar { gap: 10px; padding: 12px 14px; }
+    .player-stats { width: 100%; justify-content: space-between; font-size: 0.82rem; }
+    .player-stats > span { padding: 6px 10px; }
+
+    .game-card { flex-wrap: wrap; }
+    .answers { grid-template-columns: 1fr; }
+
+    .daily-card,
+    .profile-accuracy-card,
+    .goal-card { flex-direction: column; align-items: flex-start; }
+
+    .profile-header { flex-direction: column; text-align: center; }
+    .result-buttons { flex-direction: column; }
+    .result-buttons button { width: 100%; }
 }
 
 
 /* =========================================================
-   DAILY STREAK POPUP
+   REDUCED MOTION
+   The screen shakes, pops and float-ups are the whole "game feel",
+   but for anyone prone to motion sickness they are the reason to
+   close the tab. Everything still CHANGES — it just stops moving.
 ========================================================= */
 
-.streak-bonus-popup {
-
-    position: fixed;
-
-    top: 25px;
-
-    left: 50%;
-
-    transform:
-        translate(-50%, -30px);
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 15px;
-
-    padding:
-        16px 22px;
-
-    border-radius: 20px;
-
-    background:
-        var(--card);
-
-    border:
-        2px solid
-        rgba(249, 115, 22, 0.6);
-
-    box-shadow:
-        0 15px 40px
-        rgba(0, 0, 0, 0.35);
-
-    z-index: 10000;
-
-    opacity: 0;
-
-    transition:
-        all 0.35s ease;
-
-}
-
-
-.streak-bonus-popup.show {
-
-    opacity: 1;
-
-    transform:
-        translate(-50%, 0);
-
-}
-
-
-.streak-bonus-fire {
-
-    font-size: 35px;
-
-    animation:
-        streakPulse 0.8s
-        infinite alternate;
-
-}
-
-
-.streak-bonus-popup strong {
-
-    display: block;
-
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size: 21px;
-
-}
-
-
-.streak-bonus-popup small {
-
-    display: block;
-
-    margin-top: 2px;
-
-    color:
-        var(--muted);
-
-    font-weight: 700;
-
-}
-
-
-@keyframes streakPulse {
-
-    from {
-
-        transform:
-            scale(1);
-
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 
-    to {
-
-        transform:
-            scale(1.15);
-
-    }
-
-}
-
-
-/* =========================================================
-   LEVEL UP POPUP
-========================================================= */
-
-.level-up-popup {
-
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 9999;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    pointer-events: none;
-
-    background:
-        rgba(0, 0, 0, 0.7);
-
-    opacity: 0;
-
-    transition:
-        opacity 0.3s ease;
-}
-
-
-.level-up-popup.show {
-
-    opacity: 1;
-
-}
-
-
-.level-up-popup .level-up-content {
-
-    width: min(90%, 500px);
-
-    padding: 45px 30px;
-
-    text-align: center;
-
-    border-radius: 30px;
-
-    border:
-        1px solid
-        rgba(139, 92, 246, 0.5);
-
-    background:
-        radial-gradient(
-            circle at 50% 0%,
-            rgba(139, 92, 246, 0.3),
-            transparent 55%
-        ),
-        var(--card);
-
-    box-shadow:
-        0 30px 80px
-        rgba(0, 0, 0, 0.5);
-
-    transform:
-        scale(0.75);
-
-    transition:
-        transform 0.35s ease;
-}
-
-
-.level-up-popup.show
-.level-up-content {
-
-    transform:
-        scale(1);
-
-}
-
-
-.level-up-stars {
-
-    font-size: 35px;
-
-    margin-bottom: 15px;
-
-    animation:
-        levelStars 0.8s ease infinite alternate;
-}
-
-
-.level-up-label {
-
-    color:
-        var(--purple-light);
-
-    font-size: 16px;
-
-    font-weight: 900;
-
-    letter-spacing: 3px;
-
-    margin-bottom: 5px;
-}
-
-
-.level-up-number {
-
-    font-family:
-        "Baloo 2",
-        sans-serif;
-
-    font-size:
-        clamp(80px, 15vw, 120px);
-
-    line-height: 0.9;
-
-    font-weight: 800;
-
-    background:
-        linear-gradient(
-            90deg,
-            var(--purple),
-            var(--pink)
-        );
-
-    background-clip: text;
-
-    -webkit-background-clip: text;
-
-    color: transparent;
-
-    margin-bottom: 15px;
-}
-
-
-.level-up-message {
-
-    color:
-        var(--muted);
-
-    font-size: 17px;
-
-    font-weight: 800;
-}
-
-
-@keyframes levelStars {
-
-    from {
-
-        transform:
-            scale(1);
-
-    }
-
-    to {
-
-        transform:
-            scale(1.15);
-
-    }
-
-}
-
-
-@media (max-width: 500px) {
-
-    .level-up-popup .level-up-content {
-
-        padding:
-            35px 20px;
-
-    }
-
-    .level-up-stars {
-
-        font-size: 28px;
-
-    }
-
-    .level-up-message {
-
-        font-size: 15px;
-
-    }
-
+    .game-card:hover,
+    .subject-card:hover:not(.disabled),
+    .answer-button:hover:not(:disabled) { transform: none; }
 }
