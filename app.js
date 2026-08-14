@@ -22,10 +22,246 @@ let bestCombo = 0;
 
 let correctAnswers = 0;
 
+let questionsPlayed = 0;
+
 let timer;
 let timeLeft = 15;
 
 const TOTAL_QUESTIONS = 10;
+
+
+/* =========================================================
+   PREMIUM SYSTEM
+========================================================= */
+
+/*
+    Premium is NOT unlocked by clicking the button.
+
+    When we add a real payment system later, successful
+    payment will set this value to true.
+
+    Example:
+
+    localStorage.setItem(
+        "reviseGoPremium",
+        "true"
+    );
+*/
+
+function isPremiumUnlocked() {
+
+    return (
+        localStorage.getItem(
+            "reviseGoPremium"
+        ) === "true"
+    );
+}
+
+
+/*
+    This function is only for checking whether the
+    player is allowed to enter a premium game.
+*/
+
+function openPremiumGame(gameName) {
+
+    /*
+        If the player has already paid/unlocked Premium,
+        allow access to the premium game.
+    */
+
+    if (isPremiumUnlocked()) {
+
+        startPremiumGame(gameName);
+
+        return;
+    }
+
+
+    const title =
+        document.getElementById(
+            "premium-title"
+        );
+
+    const message =
+        document.getElementById(
+            "premium-message"
+        );
+
+
+    if (title) {
+
+        title.textContent =
+            `${gameName} is Premium`;
+    }
+
+
+    if (message) {
+
+        message.textContent =
+            `Unlock ReviseGo Premium to play ${gameName}.`;
+    }
+
+
+    /*
+        Store which premium game the player wanted.
+    */
+
+    localStorage.setItem(
+        "reviseGoPremiumGame",
+        gameName
+    );
+
+
+    updatePremiumScreen();
+
+    showScreen("premium-screen");
+}
+
+
+/*
+    This is deliberately NOT an automatic unlock.
+
+    When we connect Stripe or another payment provider,
+    the successful payment will call unlockPremium().
+*/
+
+function unlockPremium() {
+
+    /*
+        DO NOT remove this protection.
+
+        The actual payment provider will be connected here
+        later.
+    */
+
+    alert(
+        "Premium payments aren't connected yet. Once payment is set up, your purchase will unlock Boss Battle, Speed Run and future Premium games."
+    );
+}
+
+
+/*
+    This function is what will run AFTER a successful
+    payment in the future.
+
+    For now it is available so the payment system has
+    somewhere to connect to.
+*/
+
+function confirmPremiumPurchase() {
+
+    localStorage.setItem(
+        "reviseGoPremium",
+        "true"
+    );
+
+    updatePremiumScreen();
+
+    alert(
+        "Premium unlocked!"
+    );
+
+    showScreen("home-screen");
+
+    updateLevelDisplay();
+}
+
+
+/*
+    Update the Premium page depending on whether the
+    player has Premium.
+*/
+
+function updatePremiumScreen() {
+
+    const premiumButton =
+        document.querySelector(
+            ".premium-button"
+        );
+
+    const premiumNote =
+        document.querySelector(
+            ".premium-note"
+        );
+
+    const premiumTitle =
+        document.getElementById(
+            "premium-title"
+        );
+
+    const premiumMessage =
+        document.getElementById(
+            "premium-message"
+        );
+
+
+    if (isPremiumUnlocked()) {
+
+        if (premiumTitle) {
+
+            premiumTitle.textContent =
+                "Premium Unlocked 🎉";
+        }
+
+
+        if (premiumMessage) {
+
+            premiumMessage.textContent =
+                "You now have access to Boss Battle, Speed Run and future Premium games.";
+        }
+
+
+        if (premiumButton) {
+
+            premiumButton.textContent =
+                "✅ Premium Unlocked";
+
+            premiumButton.disabled =
+                true;
+        }
+
+
+        if (premiumNote) {
+
+            premiumNote.textContent =
+                "Your Premium access is active on this device.";
+        }
+
+    } else {
+
+        if (premiumButton) {
+
+            premiumButton.textContent =
+                "🔓 Unlock Premium";
+
+            premiumButton.disabled =
+                false;
+        }
+
+
+        if (premiumNote) {
+
+            premiumNote.textContent =
+                "Premium games require a purchase.";
+        }
+    }
+}
+
+
+/*
+    Placeholder for the future premium game system.
+
+    Once Premium is actually purchased, this can launch
+    the appropriate game.
+*/
+
+function startPremiumGame(gameName) {
+
+    alert(
+        `${gameName} is unlocked! The Premium game itself is coming next.`
+    );
+}
 
 
 /* =========================================================
@@ -69,24 +305,49 @@ function showScreen(screenId) {
     const screens =
         document.querySelectorAll(".screen");
 
+
     screens.forEach(screen => {
+
         screen.classList.remove("active");
+
     });
+
 
     const target =
         document.getElementById(screenId);
 
+
     if (!target) {
-        console.error("Screen not found:", screenId);
+
+        console.error(
+            "Screen not found:",
+            screenId
+        );
+
         return;
     }
 
+
     target.classList.add("active");
+
 
     window.scrollTo({
         top: 0,
         behavior: "smooth"
     });
+
+
+    /*
+        Refresh Premium screen whenever it opens.
+    */
+
+    if (
+        screenId ===
+        "premium-screen"
+    ) {
+
+        updatePremiumScreen();
+    }
 }
 
 
@@ -95,7 +356,10 @@ function showScreen(screenId) {
 ========================================================= */
 
 function openSubjects() {
-    showScreen("subject-screen");
+
+    showScreen(
+        "subject-screen"
+    );
 }
 
 
@@ -106,18 +370,29 @@ function openSubjects() {
 function getLevelFromXP(totalXP) {
 
     let level = 1;
+
     let requiredXP = 500;
+
     let remainingXP = totalXP;
 
-    while (remainingXP >= requiredXP) {
 
-        remainingXP -= requiredXP;
+    while (
+        remainingXP >=
+        requiredXP
+    ) {
+
+        remainingXP -=
+            requiredXP;
 
         level++;
 
+
         requiredXP =
-            Math.round(requiredXP * 1.2);
+            Math.round(
+                requiredXP * 1.2
+            );
     }
+
 
     return level;
 }
@@ -126,15 +401,25 @@ function getLevelFromXP(totalXP) {
 function getXPForNextLevel(totalXP) {
 
     let requiredXP = 500;
+
     let remainingXP = totalXP;
 
-    while (remainingXP >= requiredXP) {
 
-        remainingXP -= requiredXP;
+    while (
+        remainingXP >=
+        requiredXP
+    ) {
+
+        remainingXP -=
+            requiredXP;
+
 
         requiredXP =
-            Math.round(requiredXP * 1.2);
+            Math.round(
+                requiredXP * 1.2
+            );
     }
+
 
     return requiredXP;
 }
@@ -143,29 +428,41 @@ function getXPForNextLevel(totalXP) {
 function getXPIntoLevel(totalXP) {
 
     let requiredXP = 500;
+
     let remainingXP = totalXP;
 
-    while (remainingXP >= requiredXP) {
 
-        remainingXP -= requiredXP;
+    while (
+        remainingXP >=
+        requiredXP
+    ) {
+
+        remainingXP -=
+            requiredXP;
+
 
         requiredXP =
-            Math.round(requiredXP * 1.2);
+            Math.round(
+                requiredXP * 1.2
+            );
     }
+
 
     return remainingXP;
 }
 
 
 /* =========================================================
-   UPDATE ALL LEVEL DISPLAYS
+   UPDATE LEVEL DISPLAYS
 ========================================================= */
 
 function updateLevelDisplay() {
 
     const totalXP =
         Number(
-            localStorage.getItem("reviseGoXP")
+            localStorage.getItem(
+                "reviseGoXP"
+            )
         ) || 0;
 
 
@@ -182,13 +479,16 @@ function updateLevelDisplay() {
 
 
     const progress =
-        (currentLevelXP / nextLevelXP) * 100;
+        (
+            currentLevelXP /
+            nextLevelXP
+        ) * 100;
 
-
-    /* LARGE LEVEL CARD */
 
     document
-        .querySelectorAll(".player-level")
+        .querySelectorAll(
+            ".player-level"
+        )
         .forEach(element => {
 
             element.textContent =
@@ -197,10 +497,10 @@ function updateLevelDisplay() {
         });
 
 
-    /* CORNER LEVEL */
-
     document
-        .querySelectorAll(".corner-level")
+        .querySelectorAll(
+            ".corner-level"
+        )
         .forEach(element => {
 
             element.textContent =
@@ -209,10 +509,10 @@ function updateLevelDisplay() {
         });
 
 
-    /* ANY #player-level ELEMENT */
-
     document
-        .querySelectorAll("#player-level")
+        .querySelectorAll(
+            "#player-level"
+        )
         .forEach(element => {
 
             element.textContent =
@@ -221,10 +521,10 @@ function updateLevelDisplay() {
         });
 
 
-    /* XP */
-
     document
-        .querySelectorAll(".level-xp")
+        .querySelectorAll(
+            ".level-xp"
+        )
         .forEach(element => {
 
             element.textContent =
@@ -233,29 +533,31 @@ function updateLevelDisplay() {
         });
 
 
-    /* LEVEL PROGRESS */
-
     document
-        .querySelectorAll(".level-progress")
+        .querySelectorAll(
+            ".level-progress"
+        )
         .forEach(bar => {
 
             bar.style.width =
-                `${Math.min(progress, 100)}%`;
+                `${Math.min(
+                    progress,
+                    100
+                )}%`;
 
         });
 
 
-    /* TOP XP */
-
     const totalXPElement =
-        document.getElementById("total-xp");
+        document.getElementById(
+            "total-xp"
+        );
 
 
     if (totalXPElement) {
 
         totalXPElement.textContent =
             totalXP;
-
     }
 }
 
@@ -264,17 +566,27 @@ function updateLevelDisplay() {
    LEVEL UP
 ========================================================= */
 
-function checkForLevelUp(oldXP, newXP) {
+function checkForLevelUp(
+    oldXP,
+    newXP
+) {
 
     const oldLevel =
         getLevelFromXP(oldXP);
 
+
     const newLevel =
         getLevelFromXP(newXP);
 
-    if (newLevel > oldLevel) {
 
-        showLevelUp(newLevel);
+    if (
+        newLevel >
+        oldLevel
+    ) {
+
+        showLevelUp(
+            newLevel
+        );
     }
 }
 
@@ -286,13 +598,17 @@ function showLevelUp(level) {
             ".level-up-popup"
         );
 
+
     if (oldPopup) {
+
         oldPopup.remove();
     }
 
 
     const popup =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     popup.className =
@@ -324,61 +640,34 @@ function showLevelUp(level) {
     `;
 
 
-    document.body.appendChild(popup);
+    document.body.appendChild(
+        popup
+    );
 
 
     setTimeout(() => {
-        popup.classList.add("show");
+
+        popup.classList.add(
+            "show"
+        );
+
     }, 50);
 
 
     setTimeout(() => {
-        popup.classList.remove("show");
-    }, 2600);
+
+        popup.classList.remove(
+            "show"
+        );
+
+    }, 5500);
 
 
     setTimeout(() => {
+
         popup.remove();
-    }, 3200);
-}
 
-
-/* =========================================================
-   PREMIUM / PAID MODES
-========================================================= */
-
-function openPremiumGame(gameName) {
-
-    /*
-        We aren't processing real payments yet.
-
-        This simply gives the player the premium
-        screen. Later we can connect this button
-        to a proper payment provider.
-    */
-
-    const title =
-        document.getElementById("premium-title");
-
-    const message =
-        document.getElementById("premium-message");
-
-
-    if (title) {
-
-        title.textContent =
-            `${gameName} is Premium`;
-    }
-
-
-    if (message) {
-
-        message.textContent =
-            "Unlock this game to access a harder revision experience.";
-    }
-
-
-    showScreen("premium-screen");
+    }, 6200);
 }
 
 
@@ -388,17 +677,27 @@ function openPremiumGame(gameName) {
 
 function startGame(subject) {
 
-    currentSubject = subject;
+    currentSubject =
+        subject;
 
 
     const availableQuestions =
-        questions.filter(question => {
+        questions.filter(
+            question => {
 
-            return question.subject === subject;
-        });
+                return (
+                    question.subject ===
+                    subject
+                );
+
+            }
+        );
 
 
-    if (availableQuestions.length === 0) {
+    if (
+        availableQuestions.length ===
+        0
+    ) {
 
         alert(
             "There aren't any questions for this subject yet!"
@@ -409,8 +708,12 @@ function startGame(subject) {
 
 
     currentQuestions =
-        shuffleArray(availableQuestions)
-            .slice(0, TOTAL_QUESTIONS);
+        shuffleArray(
+            availableQuestions
+        ).slice(
+            0,
+            TOTAL_QUESTIONS
+        );
 
 
     while (
@@ -426,7 +729,10 @@ function startGame(subject) {
                 )
             ];
 
-        currentQuestions.push(extraQuestion);
+
+        currentQuestions.push(
+            extraQuestion
+        );
     }
 
 
@@ -444,10 +750,14 @@ function startGame(subject) {
 
     correctAnswers = 0;
 
+    questionsPlayed = 0;
+
 
     updateGameStats();
 
-    showScreen("game-screen");
+    showScreen(
+        "game-screen"
+    );
 
     loadQuestion();
 }
@@ -478,78 +788,127 @@ function loadQuestion() {
 
 
     const question =
-        currentQuestions[currentQuestion];
+        currentQuestions[
+            currentQuestion
+        ];
 
 
     document
-        .getElementById("question-number")
+        .getElementById(
+            "question-number"
+        )
         .textContent =
         currentQuestion + 1;
 
 
     document
-        .getElementById("question-topic")
+        .getElementById(
+            "question-topic"
+        )
         .textContent =
         question.topic;
 
 
     document
-        .getElementById("question-text")
+        .getElementById(
+            "question-text"
+        )
         .textContent =
         question.question;
 
 
     const progress =
-        ((currentQuestion + 1) /
-        TOTAL_QUESTIONS) * 100;
+        (
+            (currentQuestion + 1) /
+            TOTAL_QUESTIONS
+        ) * 100;
 
 
     document
-        .getElementById("progress-bar")
+        .getElementById(
+            "progress-bar"
+        )
         .style.width =
         `${progress}%`;
 
 
     const answersContainer =
-        document.getElementById("answers");
+        document.getElementById(
+            "answers"
+        );
 
 
-    answersContainer.innerHTML = "";
+    answersContainer.innerHTML =
+        "";
 
 
     const feedback =
-        document.getElementById("feedback");
+        document.getElementById(
+            "feedback"
+        );
 
 
-    feedback.textContent = "";
+    feedback.textContent =
+        "";
+
 
     feedback.className =
         "feedback";
 
 
-    question.options.forEach(
-        (option, index) => {
+    const shuffledOptions =
+        question.options.map(
+            (
+                option,
+                originalIndex
+            ) => {
+
+                return {
+                    option:
+                        option,
+
+                    originalIndex:
+                        originalIndex
+                };
+
+            }
+        );
+
+
+    shuffleArray(
+        shuffledOptions
+    ).forEach(
+        answer => {
 
             const button =
-                document.createElement("button");
+                document.createElement(
+                    "button"
+                );
+
 
             button.className =
                 "answer-button";
 
+
             button.textContent =
-                option;
+                answer.option;
+
 
             button.onclick = () => {
 
                 answerQuestion(
-                    index,
+                    answer.originalIndex,
                     button
                 );
 
             };
 
+
             answersContainer
-                .appendChild(button);
+                .appendChild(
+                    button
+                );
+
         }
     );
 
@@ -571,7 +930,9 @@ function answerQuestion(
 
 
     const question =
-        currentQuestions[currentQuestion];
+        currentQuestions[
+            currentQuestion
+        ];
 
 
     const answerButtons =
@@ -580,13 +941,23 @@ function answerQuestion(
         );
 
 
-    answerButtons.forEach(button => {
-        button.disabled = true;
-    });
+    answerButtons.forEach(
+        button => {
+
+            button.disabled =
+                true;
+
+        }
+    );
+
+
+    questionsPlayed++;
 
 
     const feedback =
-        document.getElementById("feedback");
+        document.getElementById(
+            "feedback"
+        );
 
 
     if (
@@ -604,21 +975,34 @@ function answerQuestion(
         combo++;
 
 
-        if (combo > bestCombo) {
-            bestCombo = combo;
+        if (
+            combo >
+            bestCombo
+        ) {
+
+            bestCombo =
+                combo;
         }
 
 
-        const baseXP = 100;
+        const baseXP =
+            100;
+
 
         const comboBonus =
-            (combo - 1) * 25;
+            (
+                combo - 1
+            ) * 25;
+
 
         const earnedXP =
-            baseXP + comboBonus;
+            baseXP +
+            comboBonus;
 
 
-        xp += earnedXP;
+        xp +=
+            earnedXP;
+
 
         score++;
 
@@ -626,11 +1010,15 @@ function answerQuestion(
         feedback.textContent =
             `⚡ Correct! +${earnedXP} XP — ${question.explanation}`;
 
+
         feedback.classList
             .add("correct");
 
 
-        showXPPopup(earnedXP);
+        showXPPopup(
+            earnedXP
+        );
+
 
         showCombo();
 
@@ -641,12 +1029,23 @@ function answerQuestion(
             .add("wrong");
 
 
-        if (answerButtons[question.answer]) {
+        answerButtons.forEach(
+            button => {
 
-            answerButtons[
-                question.answer
-            ].classList.add("correct");
-        }
+                if (
+                    button.textContent ===
+                    question.options[
+                        question.answer
+                    ]
+                ) {
+
+                    button.classList
+                        .add("correct");
+
+                }
+
+            }
+        );
 
 
         lives--;
@@ -656,6 +1055,7 @@ function answerQuestion(
 
         feedback.textContent =
             `💥 Not quite! ${question.explanation}`;
+
 
         feedback.classList
             .add("wrong");
@@ -675,7 +1075,9 @@ function answerQuestion(
         currentQuestion++;
 
 
-        if (lives <= 0) {
+        if (
+            lives <= 0
+        ) {
 
             finishGame();
 
@@ -702,9 +1104,14 @@ function startTimer() {
             updateTimer();
 
 
-            if (timeLeft <= 0) {
+            if (
+                timeLeft <=
+                0
+            ) {
 
-                clearInterval(timer);
+                clearInterval(
+                    timer
+                );
 
                 timeRanOut();
             }
@@ -716,10 +1123,13 @@ function startTimer() {
 function updateTimer() {
 
     const timerElement =
-        document.getElementById("timer");
+        document.getElementById(
+            "timer"
+        );
 
 
     if (!timerElement) {
+
         return;
     }
 
@@ -728,7 +1138,9 @@ function updateTimer() {
         timeLeft;
 
 
-    if (timeLeft <= 5) {
+    if (
+        timeLeft <= 5
+    ) {
 
         timerElement
             .classList
@@ -750,7 +1162,9 @@ function updateTimer() {
 function timeRanOut() {
 
     const question =
-        currentQuestions[currentQuestion];
+        currentQuestions[
+            currentQuestion
+        ];
 
 
     const answerButtons =
@@ -759,17 +1173,36 @@ function timeRanOut() {
         );
 
 
-    answerButtons.forEach(button => {
-        button.disabled = true;
-    });
+    answerButtons.forEach(
+        button => {
+
+            button.disabled =
+                true;
+
+        }
+    );
 
 
-    if (answerButtons[question.answer]) {
+    questionsPlayed++;
 
-        answerButtons[
-            question.answer
-        ].classList.add("correct");
-    }
+
+    answerButtons.forEach(
+        button => {
+
+            if (
+                button.textContent ===
+                question.options[
+                    question.answer
+                ]
+            ) {
+
+                button.classList
+                    .add("correct");
+
+            }
+
+        }
+    );
 
 
     lives--;
@@ -778,7 +1211,9 @@ function timeRanOut() {
 
 
     const feedback =
-        document.getElementById("feedback");
+        document.getElementById(
+            "feedback"
+        );
 
 
     feedback.textContent =
@@ -801,7 +1236,9 @@ function timeRanOut() {
         currentQuestion++;
 
 
-        if (lives <= 0) {
+        if (
+            lives <= 0
+        ) {
 
             finishGame();
 
@@ -821,19 +1258,27 @@ function timeRanOut() {
 function updateGameStats() {
 
     const livesElement =
-        document.getElementById("lives");
+        document.getElementById(
+            "lives"
+        );
 
 
     if (livesElement) {
 
         livesElement.textContent =
-            "❤️".repeat(lives) +
-            "🖤".repeat(3 - lives);
+            "❤️".repeat(
+                lives
+            ) +
+            "🖤".repeat(
+                3 - lives
+            );
     }
 
 
     const comboElement =
-        document.getElementById("combo");
+        document.getElementById(
+            "combo"
+        );
 
 
     if (comboElement) {
@@ -844,7 +1289,9 @@ function updateGameStats() {
 
 
     const gameXPElement =
-        document.getElementById("game-xp");
+        document.getElementById(
+            "game-xp"
+        );
 
 
     if (gameXPElement) {
@@ -868,6 +1315,7 @@ function updateCombo() {
 
 
     if (!comboElement) {
+
         return;
     }
 
@@ -887,18 +1335,22 @@ function showCombo() {
 
 
     if (!comboElement) {
+
         return;
     }
 
 
-    if (combo >= 2) {
+    if (
+        combo >= 2
+    ) {
 
         comboElement
             .classList
             .remove("hot");
 
 
-        void comboElement.offsetWidth;
+        void comboElement
+            .offsetWidth;
 
 
         comboElement
@@ -915,10 +1367,13 @@ function showCombo() {
 function animateLives() {
 
     const livesElement =
-        document.getElementById("lives");
+        document.getElementById(
+            "lives"
+        );
 
 
     if (!livesElement) {
+
         return;
     }
 
@@ -928,7 +1383,8 @@ function animateLives() {
         .remove("hit");
 
 
-    void livesElement.offsetWidth;
+    void livesElement
+        .offsetWidth;
 
 
     livesElement
@@ -941,10 +1397,14 @@ function animateLives() {
    XP POPUP
 ========================================================= */
 
-function showXPPopup(amount) {
+function showXPPopup(
+    amount
+) {
 
     const popup =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     popup.className =
@@ -956,19 +1416,29 @@ function showXPPopup(amount) {
 
 
     popup.style.left =
-        `${50 + (Math.random() * 10 - 5)}%`;
+        `${
+            50 +
+            (
+                Math.random() *
+                10 -
+                5
+            )
+        }%`;
 
 
     popup.style.top =
         "45%";
 
 
-    document.body
-        .appendChild(popup);
+    document.body.appendChild(
+        popup
+    );
 
 
     setTimeout(() => {
+
         popup.remove();
+
     }, 900);
 }
 
@@ -983,7 +1453,9 @@ function showStreakBonus(
 ) {
 
     const popup =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     popup.className =
@@ -997,6 +1469,7 @@ function showStreakBonus(
         </div>
 
         <div>
+
             <strong>
                 ${streak} Day Streak!
             </strong>
@@ -1004,6 +1477,7 @@ function showStreakBonus(
             <small>
                 +${bonusXP} Bonus XP
             </small>
+
         </div>
 
     `;
@@ -1030,154 +1504,88 @@ function showStreakBonus(
     }, 3000);
 }
 
+
 /* =========================================================
-   FINISH GAME
-========================================================= */
-
-function finishGame() {
-
-    clearInterval(timer);
-
-    const percentage =
-        Math.round(
-            (correctAnswers /
-            TOTAL_QUESTIONS) * 100
-        );
-
-    document
-        .getElementById("final-xp")
-        .textContent = xp;
-
-    document
-        .getElementById("final-score")
-        .textContent =
-        `${percentage}%`;
-
-    document
-        .getElementById("final-combo")
-        .textContent =
-        bestCombo;
-
-    let title;
-    let message;
-    let icon;
-
-    if (percentage >= 90) {
-
-        title = "ABSOLUTE BEAST 🔥";
-        message =
-            "That was seriously good.";
-        icon = "🏆";
-
-    } else if (percentage >= 70) {
-
-        title = "Nice work! ⚡";
-        message =
-            "You've got a solid score.";
-        icon = "⚡";
-
-    } else if (percentage >= 50) {
-
-        title = "Not bad 👀";
-        message =
-            "You've got some topics to work on.";
-        icon = "🎯";
-
-    } else {
-
-        title = "We go again 💪";
-        message =
-            "Don't worry. Keep practising.";
-        icon = "💪";
-    }
-
-    document
-        .getElementById("result-title")
-        .textContent =
-        title;
-
-    document
-        .getElementById("result-message")
-        .textContent =
-        message;
-
-    document
-        .getElementById("result-icon")
-        .textContent =
-        icon;
-
-    const oldXP =
-        Number(
-            localStorage.getItem(
-                "reviseGoXP"
-            )
-        ) || 0;
-
-    const newXP =
-        oldXP + xp;
-
-    checkForLevelUp(
-        oldXP,
-        newXP
-    );
-
-    saveXP(xp);
-
-
-
-    /* =========================================================
    DAILY STREAK SYSTEM
 ========================================================= */
 
 function updateDailyStreak() {
 
-    const player = getPlayerData();
+    const player =
+        getPlayerData();
 
-    const today = new Date();
+
+    const today =
+        new Date();
+
 
     const todayString =
-        today.toISOString().split("T")[0];
+        today
+            .toISOString()
+            .split("T")[0];
 
 
-    /* First completed game */
+    if (
+        !player.lastPlayed
+    ) {
 
-    if (!player.lastPlayed) {
+        player.streak =
+            1;
 
-        player.streak = 1;
 
-        player.lastPlayed = todayString;
+        player.lastPlayed =
+            todayString;
 
-        savePlayerData(player);
+
+        savePlayerData(
+            player
+        );
+
 
         return {
-            streak: player.streak,
-            bonusXP: 25,
-            isNewDay: true
+
+            streak:
+                player.streak,
+
+            bonusXP:
+                25,
+
+            isNewDay:
+                true
         };
     }
 
 
-    /* Same day */
-
-    if (player.lastPlayed === todayString) {
+    if (
+        player.lastPlayed ===
+        todayString
+    ) {
 
         return {
-            streak: player.streak,
-            bonusXP: 0,
-            isNewDay: false
+
+            streak:
+                player.streak,
+
+            bonusXP:
+                0,
+
+            isNewDay:
+                false
         };
     }
 
 
     const lastPlayedDate =
         new Date(
-            player.lastPlayed + "T00:00:00"
+            player.lastPlayed +
+            "T00:00:00"
         );
 
 
     const todayDate =
         new Date(
-            todayString + "T00:00:00"
+            todayString +
+            "T00:00:00"
         );
 
 
@@ -1187,25 +1595,27 @@ function updateDailyStreak() {
                 todayDate -
                 lastPlayedDate
             ) /
-            (1000 * 60 * 60 * 24)
+            (
+                1000 *
+                60 *
+                60 *
+                24
+            )
         );
 
 
-    /* Consecutive day */
-
-    if (difference === 1) {
+    if (
+        difference === 1
+    ) {
 
         player.streak++;
 
-    }
+    } else if (
+        difference > 1
+    ) {
 
-
-    /* Missed one or more days */
-
-    else if (difference > 1) {
-
-        player.streak = 1;
-
+        player.streak =
+            1;
     }
 
 
@@ -1213,19 +1623,226 @@ function updateDailyStreak() {
         todayString;
 
 
-    savePlayerData(player);
+    savePlayerData(
+        player
+    );
 
 
     return {
-        streak: player.streak,
-        bonusXP: 25,
-        isNewDay: true
+
+        streak:
+            player.streak,
+
+        bonusXP:
+            25,
+
+        isNewDay:
+            true
     };
 }
+
+
+/* =========================================================
+   FINISH GAME
+========================================================= */
+
+function finishGame() {
+
+    clearInterval(timer);
+
+
+    questionsPlayed =
+        Math.min(
+            questionsPlayed,
+            TOTAL_QUESTIONS
+        );
+
+
+    const percentage =
+        Math.round(
+            (
+                correctAnswers /
+                TOTAL_QUESTIONS
+            ) * 100
+        );
+
+
+    document
+        .getElementById(
+            "final-xp"
+        )
+        .textContent =
+        xp;
+
+
+    document
+        .getElementById(
+            "final-score"
+        )
+        .textContent =
+        `${percentage}%`;
+
+
+    document
+        .getElementById(
+            "final-combo"
+        )
+        .textContent =
+        bestCombo;
+
+
+    let title;
+    let message;
+    let icon;
+
+
+    if (
+        percentage >= 90
+    ) {
+
+        title =
+            "ABSOLUTE BEAST 🔥";
+
+        message =
+            "That was seriously good.";
+
+        icon =
+            "🏆";
+
+    } else if (
+        percentage >= 70
+    ) {
+
+        title =
+            "Nice work! ⚡";
+
+        message =
+            "You've got a solid score.";
+
+        icon =
+            "⚡";
+
+    } else if (
+        percentage >= 50
+    ) {
+
+        title =
+            "Not bad 👀";
+
+        message =
+            "You've got some topics to work on.";
+
+        icon =
+            "🎯";
+
+    } else {
+
+        title =
+            "We go again 💪";
+
+        message =
+            "Don't worry. Keep practising.";
+
+        icon =
+            "💪";
+    }
+
+
+    document
+        .getElementById(
+            "result-title"
+        )
+        .textContent =
+        title;
+
+
+    document
+        .getElementById(
+            "result-message"
+        )
+        .textContent =
+        message;
+
+
+    document
+        .getElementById(
+            "result-icon"
+        )
+        .textContent =
+        icon;
+
+
+    /* DAILY STREAK */
+
+    const streakResult =
+        updateDailyStreak();
+
+
+    const streakBonus =
+        streakResult.bonusXP;
+
+
+    if (
+        streakBonus > 0
+    ) {
+
+        xp +=
+            streakBonus;
+
+
+        showStreakBonus(
+            streakResult.streak,
+            streakBonus
+        );
+    }
+
+
+    document
+        .getElementById(
+            "final-xp"
+        )
+        .textContent =
+        xp;
+
+
+    /* SAVE XP */
+
+    const oldXP =
+        Number(
+            localStorage.getItem(
+                "reviseGoXP"
+            )
+        ) || 0;
+
+
+    const newXP =
+        oldXP +
+        xp;
+
+
+    checkForLevelUp(
+        oldXP,
+        newXP
+    );
+
+
+    saveXP(xp);
+
+
+    /* PROFILE */
+
     updatePlayerStats();
 
-    showScreen("results-screen");
+    updateStreakDisplay();
+
+
+    /* RESULTS */
+
+    showScreen(
+        "results-screen"
+    );
 }
+
 
 /* =========================================================
    RESTART
@@ -1233,7 +1850,9 @@ function updateDailyStreak() {
 
 function restartGame() {
 
-    startGame(currentSubject);
+    startGame(
+        currentSubject
+    );
 }
 
 
@@ -1245,9 +1864,15 @@ function leaveGame() {
 
     clearInterval(timer);
 
-    showScreen("home-screen");
+
+    showScreen(
+        "home-screen"
+    );
+
 
     updateLevelDisplay();
+
+    updateStreakDisplay();
 }
 
 
@@ -1255,14 +1880,17 @@ function leaveGame() {
    SHUFFLE
 ========================================================= */
 
-function shuffleArray(array) {
+function shuffleArray(
+    array
+) {
 
     const shuffled =
         [...array];
 
 
     for (
-        let i = shuffled.length - 1;
+        let i =
+            shuffled.length - 1;
         i > 0;
         i--
     ) {
@@ -1292,7 +1920,9 @@ function shuffleArray(array) {
    SAVE XP
 ========================================================= */
 
-function saveXP(amount) {
+function saveXP(
+    amount
+) {
 
     const oldXP =
         Number(
@@ -1303,7 +1933,8 @@ function saveXP(amount) {
 
 
     const newXP =
-        oldXP + amount;
+        oldXP +
+        amount;
 
 
     localStorage.setItem(
@@ -1318,7 +1949,9 @@ function saveXP(amount) {
         );
 
 
-    if (totalXPElement) {
+    if (
+        totalXPElement
+    ) {
 
         totalXPElement.textContent =
             newXP;
@@ -1327,6 +1960,7 @@ function saveXP(amount) {
 
     updateLevelDisplay();
 }
+
 
 /* =========================================================
    PLAYER STATS
@@ -1337,13 +1971,17 @@ function updatePlayerStats() {
     const player =
         getPlayerData();
 
+
     player.gamesPlayed++;
 
+
     player.questionsAnswered +=
-        TOTAL_QUESTIONS;
+        questionsPlayed;
+
 
     player.correctAnswers +=
         correctAnswers;
+
 
     if (
         bestCombo >
@@ -1354,10 +1992,15 @@ function updatePlayerStats() {
             bestCombo;
     }
 
-    savePlayerData(player);
+
+    savePlayerData(
+        player
+    );
+
 
     checkAchievements();
 }
+
 
 /* =========================================================
    ACHIEVEMENTS
@@ -1365,41 +2008,74 @@ function updatePlayerStats() {
 
 const achievements = [
 
-{
-    id: "first_win",
-    name: "🎖 First Victory",
-    condition: player =>
-        player.gamesPlayed >= 1
-},
+    {
+        id:
+            "first_win",
 
-{
-    id: "combo_10",
-    name: "🔥 Combo King",
-    condition: player =>
-        player.bestComboEver >= 10
-},
+        name:
+            "🎖 First Victory",
 
-{
-    id: "games_25",
-    name: "⚡ Veteran",
-    condition: player =>
-        player.gamesPlayed >= 25
-},
+        condition:
+            player =>
+                player.gamesPlayed >=
+                1
+    },
 
-{
-    id: "questions_100",
-    name: "📚 Scholar",
-    condition: player =>
-        player.questionsAnswered >= 100
-},
 
-{
-    id: "streak_7",
-    name: "🔥 Week Warrior",
-    condition: player =>
-        player.streak >= 7
-}
+    {
+        id:
+            "combo_10",
 
+        name:
+            "🔥 Combo King",
+
+        condition:
+            player =>
+                player.bestComboEver >=
+                10
+    },
+
+
+    {
+        id:
+            "games_25",
+
+        name:
+            "⚡ Veteran",
+
+        condition:
+            player =>
+                player.gamesPlayed >=
+                25
+    },
+
+
+    {
+        id:
+            "questions_100",
+
+        name:
+            "📚 Scholar",
+
+        condition:
+            player =>
+                player.questionsAnswered >=
+                100
+    },
+
+
+    {
+        id:
+            "streak_7",
+
+        name:
+            "🔥 Week Warrior",
+
+        condition:
+            player =>
+                player.streak >=
+                7
+    }
 
 ];
 
@@ -1409,6 +2085,7 @@ function checkAchievements() {
     const player =
         getPlayerData();
 
+
     achievements.forEach(
         achievement => {
 
@@ -1416,6 +2093,7 @@ function checkAchievements() {
                 player.achievements.includes(
                     achievement.id
                 );
+
 
             if (
                 !unlocked &&
@@ -1428,6 +2106,7 @@ function checkAchievements() {
                     achievement.id
                 );
 
+
                 showAchievement(
                     achievement.name
                 );
@@ -1436,18 +2115,26 @@ function checkAchievements() {
         }
     );
 
-    savePlayerData(player);
+
+    savePlayerData(
+        player
+    );
 }
 
 
-
-function showAchievement(name) {
+function showAchievement(
+    name
+) {
 
     const popup =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
+
 
     popup.className =
         "achievement-popup";
+
 
     popup.innerHTML = `
 
@@ -1461,9 +2148,11 @@ function showAchievement(name) {
 
     `;
 
+
     document.body.appendChild(
         popup
     );
+
 
     setTimeout(() => {
 
@@ -1471,6 +2160,7 @@ function showAchievement(name) {
 
     }, 3500);
 }
+
 
 /* =========================================================
    LOAD PLAYER DATA
@@ -1492,7 +2182,9 @@ function loadPlayerData() {
         );
 
 
-    if (totalXPElement) {
+    if (
+        totalXPElement
+    ) {
 
         totalXPElement.textContent =
             savedXP;
@@ -1500,16 +2192,11 @@ function loadPlayerData() {
 
 
     updateLevelDisplay();
+
+    updateStreakDisplay();
+
+    updatePremiumScreen();
 }
-
-
-/* =========================================================
-   START APP
-========================================================= */
-
-loadPlayerData();
-
-updateLevelDisplay();
 
 
 /* =========================================================
@@ -1520,67 +2207,130 @@ function openProfile() {
 
     updateProfile();
 
-    showScreen("profile-screen");
+    showScreen(
+        "profile-screen"
+    );
 }
 
 
+/* =========================================================
+   FIX PROFILE STATISTICS
+========================================================= */
+
+function fixProfileStatsLayout() {
+
+    const streakElement =
+        document.getElementById(
+            "profile-streak"
+        );
+
+
+    if (!streakElement) {
+
+        return;
+    }
+
+
+    const streakCard =
+        streakElement.closest(
+            ".profile-stat-card"
+        );
+
+
+    const statsGrid =
+        document.querySelector(
+            ".profile-stat-grid"
+        );
+
+
+    if (
+        streakCard &&
+        statsGrid &&
+        !statsGrid.contains(
+            streakCard
+        )
+    ) {
+
+        statsGrid.appendChild(
+            streakCard
+        );
+    }
+}
+
+
+/* =========================================================
+   UPDATE PROFILE
+========================================================= */
+
 function updateProfile() {
+
+    fixProfileStatsLayout();
+
 
     const player =
         getPlayerData();
 
 
-    /* XP */
-
     const totalXP =
         Number(
-            localStorage.getItem("reviseGoXP")
+            localStorage.getItem(
+                "reviseGoXP"
+            )
         ) || 0;
 
 
     const level =
-        getLevelFromXP(totalXP);
+        getLevelFromXP(
+            totalXP
+        );
 
 
     const nextLevelXP =
-        getXPForNextLevel(totalXP);
+        getXPForNextLevel(
+            totalXP
+        );
 
 
     const currentLevelXP =
-        getXPIntoLevel(totalXP);
+        getXPIntoLevel(
+            totalXP
+        );
 
 
     const progress =
-        (currentLevelXP / nextLevelXP) * 100;
+        (
+            currentLevelXP /
+            nextLevelXP
+        ) * 100;
 
-
-    /* LEVEL */
 
     const levelElement =
         document.getElementById(
             "profile-level"
         );
 
-    if (levelElement) {
+
+    if (
+        levelElement
+    ) {
 
         levelElement.textContent =
             `LEVEL ${level}`;
-
     }
 
-
-    /* XP */
 
     const xpElement =
         document.getElementById(
             "profile-xp"
         );
 
-    if (xpElement) {
+
+    if (
+        xpElement
+    ) {
 
         xpElement.textContent =
             `${currentLevelXP} / ${nextLevelXP} XP`;
-
     }
 
 
@@ -1589,41 +2339,46 @@ function updateProfile() {
             "profile-total-xp"
         );
 
-    if (totalXPElement) {
+
+    if (
+        totalXPElement
+    ) {
 
         totalXPElement.textContent =
             `${totalXP} Total XP`;
-
     }
 
-
-    /* PROGRESS */
 
     const progressElement =
         document.getElementById(
             "profile-level-progress"
         );
 
-    if (progressElement) {
+
+    if (
+        progressElement
+    ) {
 
         progressElement.style.width =
-            `${Math.min(progress, 100)}%`;
-
+            `${Math.min(
+                progress,
+                100
+            )}%`;
     }
 
-
-    /* PLAYER STATISTICS */
 
     const gamesElement =
         document.getElementById(
             "profile-games"
         );
 
-    if (gamesElement) {
+
+    if (
+        gamesElement
+    ) {
 
         gamesElement.textContent =
             player.gamesPlayed;
-
     }
 
 
@@ -1632,11 +2387,13 @@ function updateProfile() {
             "profile-questions"
         );
 
-    if (questionsElement) {
+
+    if (
+        questionsElement
+    ) {
 
         questionsElement.textContent =
             player.questionsAnswered;
-
     }
 
 
@@ -1645,11 +2402,13 @@ function updateProfile() {
             "profile-correct"
         );
 
-    if (correctElement) {
+
+    if (
+        correctElement
+    ) {
 
         correctElement.textContent =
             player.correctAnswers;
-
     }
 
 
@@ -1658,31 +2417,38 @@ function updateProfile() {
             "profile-combo"
         );
 
-    if (comboElement) {
+
+    if (
+        comboElement
+    ) {
 
         comboElement.textContent =
             player.bestComboEver;
-
     }
 
 
     const profileStreak =
-    document.getElementById(
-        "profile-streak"
-    );
+        document.getElementById(
+            "profile-streak"
+        );
 
-if (profileStreak) {
 
-    profileStreak.textContent =
-        player.streak;
+    if (
+        profileStreak
+    ) {
 
-}
+        profileStreak.textContent =
+            player.streak;
+    }
 
-    /* ACCURACY */
 
     let accuracy = 0;
 
-    if (player.questionsAnswered > 0) {
+
+    if (
+        player.questionsAnswered >
+        0
+    ) {
 
         accuracy =
             Math.round(
@@ -1691,7 +2457,6 @@ if (profileStreak) {
                     player.questionsAnswered
                 ) * 100
             );
-
     }
 
 
@@ -1700,20 +2465,23 @@ if (profileStreak) {
             "profile-accuracy"
         );
 
-    if (accuracyElement) {
+
+    if (
+        accuracyElement
+    ) {
 
         accuracyElement.textContent =
             `${accuracy}%`;
-
     }
 
 
-    /* ACHIEVEMENTS */
-
     renderProfileAchievements();
-
 }
 
+
+/* =========================================================
+   RENDER ACHIEVEMENTS
+========================================================= */
 
 function renderProfileAchievements() {
 
@@ -1724,6 +2492,7 @@ function renderProfileAchievements() {
 
 
     if (!container) {
+
         return;
     }
 
@@ -1732,7 +2501,8 @@ function renderProfileAchievements() {
         getPlayerData();
 
 
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
 
     achievements.forEach(
@@ -1745,7 +2515,9 @@ function renderProfileAchievements() {
 
 
             const card =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
 
 
             card.className =
@@ -1758,7 +2530,11 @@ function renderProfileAchievements() {
 
                 <div class="achievement-icon">
 
-                    ${unlocked ? "🏆" : "🔒"}
+                    ${
+                        unlocked
+                            ? "🏆"
+                            : "🔒"
+                    }
 
                 </div>
 
@@ -1769,11 +2545,13 @@ function renderProfileAchievements() {
                     </strong>
 
                     <small>
+
                         ${
                             unlocked
                                 ? "Unlocked"
                                 : "Keep playing to unlock"
                         }
+
                     </small>
 
                 </div>
@@ -1781,12 +2559,14 @@ function renderProfileAchievements() {
             `;
 
 
-            container.appendChild(card);
+            container.appendChild(
+                card
+            );
 
         }
     );
-
 }
+
 
 /* =========================================================
    STREAK DISPLAY
@@ -1799,13 +2579,17 @@ function updateStreakDisplay() {
 
 
     document
-        .querySelectorAll("#streak")
-        .forEach(element => {
+        .querySelectorAll(
+            "#streak"
+        )
+        .forEach(
+            element => {
 
-            element.textContent =
-                player.streak;
+                element.textContent =
+                    player.streak;
 
-        });
+            }
+        );
 
 
     const profileStreak =
@@ -1814,10 +2598,22 @@ function updateStreakDisplay() {
         );
 
 
-    if (profileStreak) {
+    if (
+        profileStreak
+    ) {
 
         profileStreak.textContent =
             player.streak;
-
     }
 }
+
+
+/* =========================================================
+   START APP
+========================================================= */
+
+loadPlayerData();
+
+updateLevelDisplay();
+
+fixProfileStatsLayout();
