@@ -83,6 +83,16 @@
 
     const todayKey = () => new Date().toISOString().slice(0, 10);
 
+    // A day is {seen, correct}. Older saves hold a plain number, so both shapes
+    // have to read cleanly or an update would wipe someone's history.
+    function dayRow(value) {
+        if (typeof value === "number") return { seen: value, correct: 0 };
+        if (value && typeof value === "object") {
+            return { seen: value.seen || 0, correct: value.correct || 0 };
+        }
+        return { seen: 0, correct: 0 };
+    }
+
 
     /* =====================================================
        RECORDING
@@ -111,7 +121,16 @@
         // things into one meaningless bar.
         bump(stats.topics, question.subject + " · " + question.topic);
 
-        stats.days[todayKey()] = (stats.days[todayKey()] || 0) + 1;
+        // Days used to be a bare count, which is enough for the daily goal but
+        // cannot answer "was I any good that day". Stored as {seen, correct} now,
+        // and dayRow() below still reads the old number so existing saves keep
+        // their streak instead of resetting to zero on update.
+        const key = todayKey();
+        const day = dayRow(stats.days[key]);
+        day.seen += 1;
+        if (wasCorrect) day.correct += 1;
+        stats.days[key] = day;
+
         writeJSON(STATS_KEY, stats);
 
         const mistakes = getMistakes();
@@ -460,6 +479,10 @@
 
         const days = Object.keys(stats.days).length;
 
+        renderActivityChart(stats);
+        renderAccuracyChart(stats);
+        renderBests();
+
         if (tiles) {
             tiles.innerHTML =
                 tile("i-book", seen, "Questions answered") +
@@ -489,6 +512,159 @@
         }
     }
 
+    /* =====================================================
+       CHARTS
+       =====================================================
+
+       Hand-rolled inline SVG — a charting library would be a bigger
+       download than this entire app.
+
+       Both charts are SINGLE SERIES on purpose. That is what lets each
+       one use a single strong hue with no legend (the caption names
+       it) and sidesteps the one real colour hazard here: the theme's
+       green and gold sit only ΔE 6.6 apart under protanopia, so they
+       must never end up as adjacent categories in the same chart.
+       Two charts, one series each, no such pair.
+    ===================================================== */
+
+    function lastDays(stats, n) {
+        const out = [];
+        const now = new Date();
+        for (let i = n - 1; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(now.getDate() - i);
+            const key = d.toISOString().slice(0, 10);
+            const row = dayRow(stats.days[key]);
+            out.push({ key: key, label: d.getDate(), day: d.getDay(), seen: row.seen, correct: row.correct });
+        }
+        return out;
+    }
+
+    function renderActivityChart(stats) {
+        const host = document.getElementById("activity-chart");
+        const table = document.getElementById("activity-table");
+        if (!host) return;
+
+        const data = lastDays(stats, 14);
+        const max = Math.max(1, ...data.map(d => d.seen));
+
+        const W = 100, H = 46, pad = 1.2;
+        const slot = W / data.length;
+        // A 2px surface gap between bars is what stops a busy chart reading as
+        // one solid block.
+        const bw = slot - pad * 2;
+
+        const bars = data.map((d, i) => {
+            const h = d.seen ? Math.max(2.5, (d.seen / max) * (H - 8)) : 0;
+            const x = i * slot + pad;
+            const y = H - 6 - h;
+            if (!d.seen) {
+                // An empty day is drawn as a faint baseline stub, so "nothing"
+                // still occupies its slot instead of silently shifting the axis.
+                return '<rect class="bar empty" x="' + x.toFixed(2) + '" y="' + (H - 8).toFixed(2) +
+                    '" width="' + bw.toFixed(2) + '" height="2" rx="1"><title>' +
+                    d.key + ": nothing</title></rect>";
+            }
+            return '<rect class="bar" x="' + x.toFixed(2) + '" y="' + y.toFixed(2) +
+                '" width="' + bw.toFixed(2) + '" height="' + h.toFixed(2) +
+                '" rx="1.2"><title>' + d.key + ": " + d.seen + " questions</title></rect>";
+        }).join("");
+
+        // Only the ends and the peak get a label — a number on every bar is noise.
+        const peak = data.reduce((b, d, i) => d.seen > data[b].seen ? i : b, 0);
+        const labels = data.map((d, i) => {
+            if (i !== 0 && i !== data.length - 1 && i !== peak) return "";
+            const x = i * slot + slot / 2;
+            return '<text class="tick" x="' + x.toFixed(2) + '" y="' + (H - 1) +
+                '" text-anchor="middle">' + d.label + "</text>";
+        }).join("");
+
+        host.innerHTML =
+            '<svg viewBox="0 0 ' + W + " " + H + '" class="chart" role="img" ' +
+            'aria-label="Questions answered per day over the last 14 days">' +
+                '<line class="axis" x1="0" y1="' + (H - 6) + '" x2="' + W + '" y2="' + (H - 6) + '"/>' +
+                bars + labels +
+            "</svg>" +
+            '<p class="chart-note">' + data.reduce((n, d) => n + d.seen, 0) +
+            " questions in 14 days · best day " + max + "</p>";
+
+        if (table) {
+            table.innerHTML = '<table><thead><tr><th>Date</th><th>Questions</th></tr></thead><tbody>' +
+                data.map(d => "<tr><td>" + d.key + "</td><td>" + d.seen + "</td></tr>").join("") +
+                "</tbody></table>";
+        }
+    }
+
+    function renderAccuracyChart(stats) {
+        const host = document.getElementById("accuracy-chart");
+        const table = document.getElementById("accuracy-table");
+        if (!host) return;
+
+        // Only days actually played. Plotting 0% for days you did not revise would
+        // draw a crash that never happened.
+        const played = lastDays(stats, 14).filter(d => d.seen > 0)
+            .map(d => ({ key: d.key, label: d.label, pct: Math.round((d.correct / d.seen) * 100) }));
+
+        if (played.length < 2) {
+            host.innerHTML = '<div class="empty-note">Play on two different days and your ' +
+                "accuracy trend appears here.</div>";
+            if (table) table.innerHTML = "";
+            return;
+        }
+
+        const W = 100, H = 46, top = 6, bottom = H - 10;
+        const step = played.length > 1 ? W / (played.length - 1) : W;
+        const y = p => bottom - (p / 100) * (bottom - top);
+
+        const points = played.map((d, i) => [i * step, y(d.pct)]);
+        const path = points.map((p, i) =>
+            (i ? "L" : "M") + p[0].toFixed(2) + " " + p[1].toFixed(2)).join(" ");
+
+        // Markers are ≥8px on screen at this scale and carry a 2px surface ring so
+        // they stay separate where the line doubles back on itself.
+        const dots = points.map((p, i) =>
+            '<circle class="dot" cx="' + p[0].toFixed(2) + '" cy="' + p[1].toFixed(2) +
+            '" r="1.5"><title>' + played[i].key + ": " + played[i].pct + "%</title></circle>").join("");
+
+        const last = played[played.length - 1];
+        const first = played[0];
+        const trend = last.pct - first.pct;
+
+        host.innerHTML =
+            '<svg viewBox="0 0 ' + W + " " + H + '" class="chart" role="img" ' +
+            'aria-label="Accuracy percentage across the days you played">' +
+                '<line class="grid" x1="0" y1="' + y(50).toFixed(2) + '" x2="' + W +
+                    '" y2="' + y(50).toFixed(2) + '"/>' +
+                '<text class="tick" x="0" y="' + (y(50) - 1.5).toFixed(2) + '">50%</text>' +
+                '<path class="line" d="' + path + '"/>' + dots +
+                '<text class="tick" x="' + W + '" y="' + (y(last.pct) - 3).toFixed(2) +
+                    '" text-anchor="end">' + last.pct + "%</text>" +
+            "</svg>" +
+            '<p class="chart-note">' +
+                (trend > 0 ? "Up " + trend : trend < 0 ? "Down " + Math.abs(trend) : "Level") +
+                (trend ? " points" : "") + " since " + first.key + "</p>";
+
+        if (table) {
+            table.innerHTML = '<table><thead><tr><th>Date</th><th>Accuracy</th></tr></thead><tbody>' +
+                played.map(d => "<tr><td>" + d.key + "</td><td>" + d.pct + "%</td></tr>").join("") +
+                "</tbody></table>";
+        }
+    }
+
+    function renderBests() {
+        const host = document.getElementById("bests-grid");
+        if (!host) return;
+        const speed = typeof getBest === "function" ? getBest("speed-run") : 0;
+        const boss = typeof getBest === "function" ? getBest("boss-battle") : 0;
+        const player = typeof getPlayerData === "function" ? getPlayerData() : {};
+
+        host.innerHTML =
+            tile("i-timer", speed, "Speed Run best") +
+            tile("i-ghost", boss, "Boss damage best") +
+            tile("i-flame", player.bestComboEver || 0, "Best combo") +
+            tile("i-gamepad", player.gamesPlayed || 0, "Games played");
+    }
+
     function tile(icon, value, label) {
         return '<div class="stat-tile"><span class="profile-stat-icon">' + svg(icon) + "</span>" +
             "<strong>" + escapeHTML(value) + "</strong><small>" + escapeHTML(label) + "</small></div>";
@@ -501,7 +677,7 @@
 
     function refreshHome() {
         const stats = getStats();
-        const done = stats.days[todayKey()] || 0;
+        const done = dayRow(stats.days[todayKey()]).seen;
         const percent = Math.min(100, Math.round((done / DAILY_GOAL) * 100));
 
         const ring = document.getElementById("goal-ring");
@@ -749,6 +925,10 @@
         const nameEl = document.getElementById("profile-name");
         if (nameEl) nameEl.textContent = Profiles.name();
 
+        renderAvatar();
+        renderSince();
+        wireProfileActions();
+
         const del = document.getElementById("delete-profile");
         if (del) {
             del.style.display = Profiles.list().length > 1 ? "" : "none";
@@ -761,6 +941,184 @@
                 location.reload();
             };
         }
+    }
+
+
+    const AVATARS = [
+        { id: "cyan", from: "#22D3EE", to: "#0E9EB8" },
+        { id: "gold", from: "#FFC53D", to: "#FF6B4A" },
+        { id: "green", from: "#3DDC84", to: "#0E9EB8" },
+        { id: "coral", from: "#FF6B4A", to: "#FF5C7A" },
+        { id: "sky", from: "#7DD3FC", to: "#2563EB" },
+        { id: "mint", from: "#A7F3D0", to: "#3DDC84" }
+    ];
+
+    const AVATAR_KEY = "reviseGoAvatar";
+
+    function currentAvatar() {
+        const id = localStorage.getItem(AVATAR_KEY);
+        return AVATARS.filter(a => a.id === id)[0] || AVATARS[0];
+    }
+
+    function renderAvatar() {
+        const av = currentAvatar();
+        const el = document.getElementById("profile-avatar");
+        if (el) el.style.background = "linear-gradient(150deg," + av.from + "," + av.to + ")";
+
+        const picker = document.getElementById("avatar-picker");
+        if (!picker) return;
+
+        picker.innerHTML = AVATARS.map(a =>
+            '<button class="avatar-dot' + (a.id === av.id ? " on" : "") + '"' +
+            ' role="radio" aria-checked="' + (a.id === av.id) + '"' +
+            ' aria-label="' + a.id + ' avatar" data-av="' + a.id + '"' +
+            ' style="background:linear-gradient(150deg,' + a.from + "," + a.to + ')"></button>'
+        ).join("");
+
+        picker.querySelectorAll(".avatar-dot").forEach(b => {
+            b.addEventListener("click", () => {
+                localStorage.setItem(AVATAR_KEY, b.dataset.av);
+                renderAvatar();
+            });
+        });
+    }
+
+    function renderSince() {
+        const el = document.getElementById("profile-since");
+        if (!el || !window.Profiles) return;
+        const p = Profiles.active();
+        if (!p || !p.created) return;
+        const days = Math.max(1, Math.round((Date.now() - p.created) / 86400000));
+        el.textContent = "Playing for " + days + (days === 1 ? " day" : " days") +
+            " · " + (Number(localStorage.getItem("reviseGoXP")) || 0) + " XP earned";
+    }
+
+    /* Export / import.
+       With no server, the browser's storage IS the save file — and clearing site
+       data wipes it with no warning and no way back. A one-click export is the
+       difference between "I lost everything" and "I restored it". */
+    function wireProfileActions() {
+        const rename = document.getElementById("rename-profile");
+        if (rename) {
+            rename.onclick = function () {
+                const p = Profiles.active();
+                const next = prompt("New name for this player?", p ? p.name : "");
+                if (next && Profiles.rename(p.id, next)) renderProfileBar();
+            };
+        }
+
+        const exp = document.getElementById("export-save");
+        if (exp) {
+            exp.onclick = function () {
+                const payload = {
+                    app: "ReviseGo",
+                    version: 1,
+                    exported: new Date().toISOString(),
+                    profile: Profiles.active(),
+                    data: {
+                        xp: localStorage.getItem("reviseGoXP"),
+                        player: localStorage.getItem("reviseGoPlayer"),
+                        mistakes: localStorage.getItem("reviseGoMistakes"),
+                        stats: localStorage.getItem("reviseGoStats"),
+                        bests: localStorage.getItem("reviseGoBests"),
+                        avatar: localStorage.getItem(AVATAR_KEY)
+                    }
+                };
+                const blob = new Blob([JSON.stringify(payload, null, 2)],
+                    { type: "application/json" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "revisego-save-" +
+                    new Date().toISOString().slice(0, 10) + ".json";
+                a.click();
+                URL.revokeObjectURL(a.href);
+            };
+        }
+
+        const imp = document.getElementById("import-save");
+        const file = document.getElementById("import-file");
+        if (imp && file) {
+            imp.onclick = () => file.click();
+            file.onchange = function () {
+                const f = file.files && file.files[0];
+                if (!f) return;
+                const reader = new FileReader();
+                reader.onload = function () {
+                    let payload;
+                    try {
+                        payload = JSON.parse(reader.result);
+                    } catch (e) {
+                        alert("That file isn't a ReviseGo save.");
+                        return;
+                    }
+                    if (!payload || payload.app !== "ReviseGo" || !payload.data) {
+                        alert("That file isn't a ReviseGo save.");
+                        return;
+                    }
+                    // Overwriting a save is not undoable, so it asks first and says
+                    // exactly whose progress is about to be replaced.
+                    if (!confirm("Import this save into \"" + Profiles.name() +
+                                 "\"? Their current XP, level and review list will be replaced.")) {
+                        return;
+                    }
+                    const d = payload.data;
+                    const map = {
+                        reviseGoXP: d.xp,
+                        reviseGoPlayer: d.player,
+                        reviseGoMistakes: d.mistakes,
+                        reviseGoStats: d.stats,
+                        reviseGoBests: d.bests
+                    };
+                    Object.keys(map).forEach(k => {
+                        if (map[k] != null) localStorage.setItem(k, map[k]);
+                    });
+                    if (d.avatar) localStorage.setItem(AVATAR_KEY, d.avatar);
+                    location.reload();
+                };
+                reader.readAsText(f);
+            };
+        }
+    }
+
+
+    /* =====================================================
+       ACHIEVEMENTS — with progress, not just locked/unlocked
+    ===================================================== */
+
+    const ACHIEVEMENT_TARGETS = {
+        first_win: { label: "Play your first game", target: 1, of: p => p.gamesPlayed || 0 },
+        combo_10: { label: "Hit a 10 combo", target: 10, of: p => p.bestComboEver || 0 },
+        games_25: { label: "Play 25 games", target: 25, of: p => p.gamesPlayed || 0 },
+        questions_100: { label: "Answer 100 questions", target: 100, of: p => p.questionsAnswered || 0 },
+        streak_7: { label: "Revise 7 days running", target: 7, of: p => p.streak || 0 }
+    };
+
+    function renderAchievementProgress() {
+        const host = document.getElementById("profile-achievements");
+        if (!host || typeof achievements === "undefined") return;
+
+        const player = getPlayerData();
+
+        host.innerHTML = achievements.map(a => {
+            const meta = ACHIEVEMENT_TARGETS[a.id];
+            const unlocked = (player.achievements || []).indexOf(a.id) !== -1;
+            const have = meta ? Math.min(meta.of(player), meta.target) : (unlocked ? 1 : 0);
+            const target = meta ? meta.target : 1;
+            const pctDone = Math.round((have / target) * 100);
+
+            return '<div class="achievement-row' + (unlocked ? " done" : "") + '">' +
+                '<div class="achievement-mark">' +
+                    svg(unlocked ? "i-trophy" : "i-lock") + "</div>" +
+                '<div class="achievement-body">' +
+                    "<strong>" + escapeHTML(a.name) + "</strong>" +
+                    "<small>" + escapeHTML(meta ? meta.label : "") + "</small>" +
+                    '<div class="achievement-track">' +
+                        '<div class="achievement-fill" style="width:' + pctDone + '%"></div>' +
+                    "</div>" +
+                "</div>" +
+                '<span class="achievement-count">' + have + "/" + target + "</span>" +
+            "</div>";
+        }).join("");
     }
 
 
@@ -873,6 +1231,21 @@
         init();
     }
 
+    // Shared with modes.js (Speed Run / Boss Battle), which run their own loop but
+    // must feed the same review list and stats — otherwise a mistake made in Speed
+    // Run would never reach the page whose whole job is collecting mistakes.
+    window.ReviseGo = {
+        recordAttempt: recordAttempt,
+        getStats: getStats,
+        getMistakes: getMistakes,
+        escapeHTML: escapeHTML,
+        svg: svg,
+        refreshHome: refreshHome,
+        renderGameLocks: renderGameLocks,
+        mistakeCard: mistakeCard,
+        todayKey: todayKey
+    };
+
     // Returning to the arcade should show the numbers as they are NOW, not as
     // they were when the page loaded.
     const _showScreen = window.showScreen;
@@ -880,7 +1253,7 @@
         const out = _showScreen.apply(this, arguments);
         if (id === "home-screen") { refreshHome(); renderGameLocks(); }
         if (id === "premium-screen") renderPremium();
-        if (id === "profile-screen") renderProfileBar();
+        if (id === "profile-screen") { renderProfileBar(); renderAchievementProgress(); }
         return out;
     };
 

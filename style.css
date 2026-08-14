@@ -1535,6 +1535,309 @@ main {
 
 
 /* =========================================================
+   PLANS + FAQ
+========================================================= */
+
+.plan-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: var(--space-3);
+    margin: var(--space-4) 0;
+    text-align: left;
+}
+
+.plan {
+    padding: var(--space-3);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+}
+
+/* The paid plan gets the brand edge and a lift. One obvious recommendation
+   beats two equal columns that make the reader do the comparing. */
+.plan.best {
+    border-color: var(--gold);
+    background: linear-gradient(180deg, rgba(255, 197, 61, 0.07), var(--card));
+    box-shadow: var(--shadow);
+}
+
+.game-tag.gold { color: var(--gold-ink); background: var(--gold); border-color: transparent; }
+
+.plan-price { display: flex; align-items: baseline; gap: 8px; margin-bottom: var(--space-2); }
+.plan-price strong { font-family: var(--font-display); font-size: 2rem; }
+.plan-price small { color: var(--muted); font-size: 0.8rem; }
+.plan.best .plan-price strong { color: var(--gold); }
+
+.plan-list { list-style: none; display: grid; gap: 9px; }
+
+.plan-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 0.9rem;
+    color: var(--text-soft);
+}
+
+.plan-list li .icon { margin-top: 3px; color: var(--correct); }
+.plan-list li.off { color: var(--muted); opacity: 0.7; }
+.plan-list li.off .icon { color: var(--muted); }
+
+.faq { margin-top: var(--space-5); text-align: left; }
+.faq h3 { margin-bottom: var(--space-2); }
+
+.faq details {
+    padding: 13px var(--space-3);
+    margin-bottom: 9px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+}
+
+.faq summary {
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+}
+
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: " +"; color: var(--primary); float: right; }
+.faq details[open] summary::after { content: " \2212"; }
+.faq details p { margin-top: 9px; font-size: 0.9rem; }
+
+
+/* =========================================================
+   PROFILE — avatar, actions, achievements
+========================================================= */
+
+.profile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.secondary-button.small {
+    min-height: 40px;
+    padding: 9px 16px;
+    font-size: 0.85rem;
+}
+
+.avatar-picker { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: var(--space-4); }
+
+.avatar-dot {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--fast), border-color var(--fast);
+}
+
+.avatar-dot:hover { transform: scale(1.08); }
+.avatar-dot.on { border-color: var(--text); transform: scale(1.08); }
+
+.achievement-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 13px var(--space-3);
+    margin-bottom: 9px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+}
+
+.achievement-row.done { border-color: rgba(255, 197, 61, 0.35); }
+
+.achievement-mark {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 11px;
+}
+
+.achievement-row.done .achievement-mark {
+    color: var(--gold-ink);
+    background: var(--gold);
+}
+
+.achievement-body { flex: 1; min-width: 0; }
+.achievement-body strong { display: block; font-size: 0.95rem; }
+.achievement-body small { color: var(--muted); font-size: 0.8rem; }
+
+.achievement-track {
+    height: 6px;
+    margin-top: 7px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.achievement-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), var(--gold));
+    transition: width 600ms var(--ease);
+}
+
+.achievement-count {
+    flex: 0 0 auto;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* =========================================================
+   CHARTS
+   Recessive axes, one strong hue per chart, text in text tokens
+   rather than the series colour.
+========================================================= */
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.chart-card {
+    padding: var(--space-3);
+    margin: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+}
+
+.chart-card figcaption {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.chart-card figcaption strong { font-family: var(--font-display); font-size: 0.98rem; }
+.chart-card figcaption span { font-size: 0.78rem; color: var(--muted); }
+
+.chart { width: 100%; height: auto; overflow: visible; }
+
+.chart .bar { fill: var(--primary); }
+.chart .bar.empty { fill: rgba(255, 255, 255, 0.12); }
+.chart .bar:hover { fill: #6FE6F7; }
+
+.chart .line {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* The surface-coloured ring keeps markers separate where the line doubles back. */
+.chart .dot { fill: var(--gold); stroke: var(--card); stroke-width: 0.8; }
+
+.chart .axis { stroke: var(--line-strong); stroke-width: 0.4; }
+.chart .grid { stroke: var(--line-strong); stroke-width: 0.4; stroke-dasharray: 2 2; }
+
+.chart .tick {
+    fill: var(--muted);
+    font-size: 3.4px;
+    font-family: var(--font-body);
+}
+
+.chart-note { margin-top: 9px; font-size: 0.8rem; color: var(--muted); }
+
+.chart-table { margin-top: 10px; }
+
+.chart-table summary {
+    cursor: pointer;
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+.chart-table table { width: 100%; margin-top: 9px; border-collapse: collapse; font-size: 0.8rem; }
+.chart-table th, .chart-table td { padding: 5px 7px; text-align: left; border-bottom: 1px solid var(--line); }
+.chart-table th { color: var(--muted); font-weight: 600; }
+.chart-table td { color: var(--text-soft); font-variant-numeric: tabular-nums; }
+
+
+/* =========================================================
+   PREMIUM MODES — Speed Run / Boss Battle
+========================================================= */
+
+.mode-title { text-align: right; }
+.mode-title strong { display: block; font-family: var(--font-display); font-size: 1.05rem; }
+.mode-title small { color: var(--muted); font-size: 0.78rem; }
+
+.mode-hud {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.hud-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+}
+
+.hud-cell .icon { color: var(--primary); width: 1.15em; height: 1.15em; }
+.hud-cell strong { font-family: var(--font-display); font-size: 1.5rem; }
+.hud-cell small { font-size: 0.72rem; color: var(--muted); }
+
+.hud-cell.urgent { border-color: var(--wrong); }
+.hud-cell.urgent .icon, .hud-cell.urgent strong { color: var(--wrong); }
+.hud-cell.urgent { animation: tick 800ms steps(2, end) infinite; }
+
+.hud-cell.hot { border-color: var(--coral); }
+.hud-cell.hot .icon, .hud-cell.hot strong { color: var(--coral); }
+
+.hud-boss {
+    grid-column: 1 / -1;
+    padding: 12px var(--space-3);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+}
+
+.hud-boss-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 7px;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.hud-boss-track {
+    height: 14px;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.hud-boss-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--coral), var(--wrong));
+    transition: width 400ms var(--ease);
+}
+
+.feedback.ok { border-left-color: var(--correct); }
+.feedback.bad { border-left-color: var(--wrong); }
+
+.best-note { margin-top: 10px; font-size: 0.9rem; color: var(--muted); }
+.best-note.new { color: var(--gold); font-weight: 700; }
+
+
+/* =========================================================
    FOOTER
 ========================================================= */
 

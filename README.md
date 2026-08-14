@@ -8,8 +8,9 @@ a browser.
 index.html        markup + the SVG icon sprite
 style.css         the design system (all colour lives in :root)
 profile.js        player profiles, premium and game unlocks — LOADS FIRST
-app.js            the game — questions, scoring, lives, XP, levels, achievements
-enhance.js        review, progress, daily goal, level-up, XP bonuses (wraps app.js)
+app.js            Quick Battle — questions, scoring, lives, XP, levels, achievements
+enhance.js        review, progress, charts, profile, level-up, XP bonuses (wraps app.js)
+modes.js          Speed Run and Boss Battle — their own loop, shared recorder
 data/questions.js the question bank
 tests/smoke.js    plays a full game headlessly and checks nothing broke
 ```
@@ -50,6 +51,31 @@ changes everywhere; there is no raw hex anywhere else in the stylesheet.
 Interface icons are inline SVG (`<symbol>` sprite at the top of `index.html`), not emoji. Emoji
 render as a different picture on every platform, cannot take the theme colour, and are announced
 by a screen reader as their unicode name — "fire", "collision" — instead of what they label.
+
+## Game modes
+
+| Mode | Rules | Unlock |
+|---|---|---|
+| **Quick Battle** | 10 questions, 3 lives, 15s each | Free |
+| **Speed Run** | 60 seconds, no lives. Right answers add a second, wrong ones cost three. | Level 5 + Premium |
+| **Boss Battle** | Harder questions. Correct answers damage the boss, wrong ones cost you health. Combo raises the damage. | Level 3 + Premium |
+
+All three feed the same review list, stats and daily goal — a mistake made in Speed Run turns up
+on **My Mistakes** exactly like one from Quick Battle.
+
+Level is checked *before* premium on purpose: telling someone to buy premium for a game they
+still couldn't play would be selling them something that doesn't do what they think.
+
+## Charts
+
+Hand-rolled inline SVG in `enhance.js` — a charting library would be a bigger download than this
+entire app.
+
+Both charts are **single series** deliberately. That lets each use one strong hue with no legend
+(the caption names it) and avoids the one real colour hazard in this theme: the green and gold
+sit only ΔE 6.6 apart under protanopia, so they must never be adjacent categories in the same
+chart. Two charts, one series each, no such pair. Every chart has a `View as table` fallback and
+an `aria-label`.
 
 ## Players ("accounts")
 

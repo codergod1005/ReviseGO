@@ -603,6 +603,108 @@
 
 
 <!-- =====================================================
+     PREMIUM MODES — subject pick, play, results
+===================================================== -->
+
+<section id="mode-subject-screen" class="screen">
+
+    <button class="back-button" onclick="showScreen('home-screen')">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+        Back
+    </button>
+
+    <div class="page-title">
+        <p class="small-heading" id="mode-subject-title">Speed Run</p>
+        <h1>Choose a subject</h1>
+        <p>Everything you answer still counts towards your XP and review list.</p>
+    </div>
+
+    <div class="subject-grid">
+
+        <button class="subject-card" onclick="startModeWithSubject('Maths')">
+            <span class="subject-icon">
+                <svg class="icon" aria-hidden="true"><use href="#i-calculator"/></svg>
+            </span>
+            <span><strong>Maths</strong><small>Numbers, algebra &amp; more</small></span>
+            <span><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg></span>
+        </button>
+
+        <button class="subject-card" onclick="startModeWithSubject('Science')">
+            <span class="subject-icon">
+                <svg class="icon" aria-hidden="true"><use href="#i-flask"/></svg>
+            </span>
+            <span><strong>Science</strong><small>Biology, chemistry &amp; physics</small></span>
+            <span><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg></span>
+        </button>
+
+        <button class="subject-card" onclick="startModeWithSubject('')">
+            <span class="subject-icon">
+                <svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg>
+            </span>
+            <span><strong>Everything</strong><small>All subjects mixed together</small></span>
+            <span><svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg></span>
+        </button>
+
+    </div>
+
+</section>
+
+
+<section id="mode-screen" class="screen">
+
+    <div class="game-top">
+        <button class="back-button" onclick="quitMode()">
+            <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+            Quit
+        </button>
+        <div class="mode-title">
+            <strong id="mode-name">Speed Run</strong>
+            <small id="mode-blurb"></small>
+        </div>
+    </div>
+
+    <div class="mode-hud" id="mode-hud"></div>
+
+    <div class="question-box">
+        <p class="question-topic" id="mode-topic"></p>
+        <h2 id="mode-question">Loading...</h2>
+    </div>
+
+    <div id="mode-answers" class="answers"></div>
+
+    <div id="mode-feedback" class="feedback" role="status" aria-live="polite"></div>
+
+</section>
+
+
+<section id="mode-result-screen" class="screen">
+
+    <div class="results-header">
+        <div class="result-icon">
+            <svg class="icon" aria-hidden="true"><use href="#i-trophy"/></svg>
+        </div>
+        <p class="small-heading">Run complete</p>
+        <h1 id="mode-result-title">Time!</h1>
+        <p id="mode-result-sub"></p>
+        <p id="mode-best-note" class="best-note"></p>
+    </div>
+
+    <div class="result-stats" id="mode-result-stats"></div>
+
+    <div class="result-buttons">
+        <button class="main-button" id="mode-again">
+            <svg class="icon icon-fill" aria-hidden="true"><use href="#i-bolt"/></svg>
+            Run it again
+        </button>
+        <button class="secondary-button" onclick="showScreen('home-screen')">
+            Back to Arcade
+        </button>
+    </div>
+
+</section>
+
+
+<!-- =====================================================
      REVIEW — my mistakes
 ===================================================== -->
 
@@ -661,6 +763,45 @@
     <div class="stat-grid" id="progress-tiles"></div>
 
 
+    <div class="chart-grid">
+
+        <figure class="chart-card">
+            <figcaption>
+                <strong>Questions answered</strong>
+                <span>Last 14 days</span>
+            </figcaption>
+            <div id="activity-chart"></div>
+            <details class="chart-table">
+                <summary>View as table</summary>
+                <div id="activity-table"></div>
+            </details>
+        </figure>
+
+        <figure class="chart-card">
+            <figcaption>
+                <strong>Accuracy trend</strong>
+                <span>Days you played</span>
+            </figcaption>
+            <div id="accuracy-chart"></div>
+            <details class="chart-table">
+                <summary>View as table</summary>
+                <div id="accuracy-table"></div>
+            </details>
+        </figure>
+
+    </div>
+
+
+    <div class="section-heading">
+        <div>
+            <p class="small-heading">Personal bests</p>
+            <h2>Your records</h2>
+        </div>
+    </div>
+
+    <div class="stat-grid" id="bests-grid"></div>
+
+
     <div class="section-heading">
         <div>
             <p class="small-heading">By subject</p>
@@ -712,21 +853,55 @@
         </p>
 
 
-        <div class="premium-card">
+        <p id="premium-status" class="premium-status"></p>
 
-            <div class="premium-card-icon">
-                <svg class="icon" aria-hidden="true"><use href="#i-crown"/></svg>
+
+        <!-- WHAT YOU GET. Every row is a thing that exists in this build —
+             listing features that aren't written yet is how a paid product
+             earns its first refund. -->
+        <div class="plan-grid">
+
+            <div class="plan">
+                <span class="game-tag">Free</span>
+                <div class="plan-price"><strong>£0</strong></div>
+                <ul class="plan-list">
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        Quick Battle, all subjects</li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        My Mistakes review list</li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        Progress charts and streaks</li>
+                    <li class="off"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+                        Speed Run</li>
+                    <li class="off"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+                        Boss Battle</li>
+                </ul>
             </div>
 
-            <div>
-                <h2>ReviseGo Premium</h2>
-                <p>Unlock Boss Battle, Speed Run and future premium revision modes.</p>
+            <div class="plan best">
+                <span class="game-tag gold">Premium</span>
+                <div class="plan-price"><strong>£4.99</strong><small>one payment</small></div>
+                <ul class="plan-list">
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        Everything in Free</li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        <b>Speed Run</b> — 60-second timed rounds</li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        <b>Boss Battle</b> — harder questions, boss health</li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        Personal bests for every mode</li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>
+                        Future premium modes included</li>
+                </ul>
             </div>
 
         </div>
 
 
-        <p id="premium-status" class="premium-status"></p>
+        <button class="premium-button" id="pay-button">
+            <svg class="icon" aria-hidden="true"><use href="#i-crown"/></svg>
+            Buy Premium
+        </button>
 
         <button class="premium-button" id="pay-button">
             <svg class="icon" aria-hidden="true"><use href="#i-crown"/></svg>
@@ -759,6 +934,51 @@
             never sees your card details.
         </p>
 
+
+        <div class="faq">
+
+            <h3>Questions people actually ask</h3>
+
+            <details>
+                <summary>Is this a subscription?</summary>
+                <p>No. One payment, kept forever. There is nothing to cancel.</p>
+            </details>
+
+            <details>
+                <summary>What happens on a different device?</summary>
+                <p>
+                    Premium unlocks on the device you redeem it on, because ReviseGo has no
+                    accounts server — your progress lives in this browser. Keep your unlock
+                    code and you can redeem it on another device too.
+                </p>
+            </details>
+
+            <details>
+                <summary>Do I lose my progress if I clear my browser data?</summary>
+                <p>
+                    Yes — everything is stored in this browser. Use <b>Export save</b> on your
+                    profile page first; it downloads a file you can import back afterwards.
+                </p>
+            </details>
+
+            <details>
+                <summary>Can I get a refund?</summary>
+                <p>
+                    Yes. Reply to your Stripe receipt within 14 days and it will be refunded,
+                    no questions. Premium stays unlocked on this device until you clear it.
+                </p>
+            </details>
+
+            <details>
+                <summary>Is my card safe?</summary>
+                <p>
+                    ReviseGo never sees it. Payment happens on Stripe's own checkout page, and
+                    this app has no card form anywhere in it.
+                </p>
+            </details>
+
+        </div>
+
     </div>
 
 
@@ -780,17 +1000,30 @@
 
     <div class="profile-header">
 
-        <div class="profile-avatar">
+        <div class="profile-avatar" id="profile-avatar">
             <svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>
         </div>
 
         <div>
             <p class="small-heading">Player profile</p>
             <h1 id="profile-name">Player 1</h1>
-            <p>Keep revising. Keep levelling up.</p>
+            <p id="profile-since">Keep revising. Keep levelling up.</p>
+
+            <div class="profile-actions">
+                <button class="secondary-button small" id="rename-profile">Rename</button>
+                <button class="secondary-button small" id="export-save">Export save</button>
+                <button class="secondary-button small" id="import-save">Import save</button>
+                <input type="file" id="import-file" accept="application/json" hidden>
+            </div>
         </div>
 
     </div>
+
+
+    <!-- Avatar. Six colours rather than uploads: no server to hold an image,
+         and a picker that only ever produces valid values cannot break. -->
+    <div class="avatar-picker" id="avatar-picker" role="radiogroup"
+         aria-label="Choose your avatar colour"></div>
 
 
     <!-- Save slots, not sign-in. There is no server and no password, so the
@@ -924,6 +1157,8 @@
 <script src="data/questions.js"></script>
 <script src="app.js"></script>
 <script src="enhance.js"></script>
+<!-- After enhance.js: the modes reuse its mistake recorder and stats. -->
+<script src="modes.js"></script>
 
 
 </body>

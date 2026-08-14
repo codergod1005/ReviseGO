@@ -32,7 +32,7 @@ const { window } = dom;
 // elements. window.eval() would run them in a function scope, where app.js's
 // top-level `const questions` never becomes a global — which is a property of
 // the harness, not of the page.
-for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js"]) {
+for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js"]) {
     const el = window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     try {
@@ -70,8 +70,8 @@ check("every icon reference resolves", missingIcons.size === 0,
       missingIcons.size ? "missing: " + [...missingIcons].join(", ") : `${symbolIds.size} symbols`);
 
 // Every getElementById in the JS must find something, or a feature is dead.
-const jsSrc = fs.readFileSync(path.join(ROOT, "app.js"), "utf8")
-            + fs.readFileSync(path.join(ROOT, "enhance.js"), "utf8");
+const jsSrc = ["app.js", "enhance.js", "modes.js", "profile.js"]
+    .map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n");
 const wantedIds = [...jsSrc.matchAll(/getElementById\(\s*["'`]([\w-]+)["'`]/g)].map(m => m[1]);
 const missingIds = [...new Set(wantedIds)].filter(id => !$(id));
 check("every getElementById target exists", missingIds.length === 0,
@@ -192,7 +192,7 @@ const dom2 = new JSDOM(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), {
     virtualConsole: vc, pretendToBeVisual: true,
 });
 Object.keys(store).forEach(k => dom2.window.localStorage.setItem(k, store[k]));
-for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js"]) {
+for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js"]) {
     const el = dom2.window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     dom2.window.document.body.appendChild(el);
@@ -306,6 +306,113 @@ check("a perfect round is rewarded",
       $("xp-breakdown").textContent.replace(/\s+/g, " ").slice(0, 80));
 const bonusXP = Number(window.localStorage.getItem("reviseGoXP")) || 0;
 check("bonus XP was actually banked", bonusXP > 0, bonusXP + " XP");
+
+// ---- premium modes are real games, not alerts -------------------------------
+// Speed Run and Boss Battle used to be `alert("coming next")`. Selling access to
+// an alert box is how a paid product earns its first refund.
+const appSrc = fs.readFileSync(path.join(ROOT, "modes.js"), "utf8");
+check("modes.js defines both premium modes",
+      /speed-run/.test(appSrc) && /boss-battle/.test(appSrc));
+
+window.startPremiumGame("Speed Run");
+check("premium game asks for a subject first",
+      $("mode-subject-screen").classList.contains("active"));
+
+window.startModeWithSubject("Maths");
+check("Speed Run starts", $("mode-screen").classList.contains("active"));
+check("Speed Run renders a question", $("mode-question").textContent.length > 3,
+      $("mode-question").textContent.slice(0, 40));
+check("Speed Run renders four answers", $("mode-answers").children.length === 4);
+check("Speed Run answers carry key hints",
+      $("mode-answers").children[0].getAttribute("data-key") === "1");
+check("Speed Run HUD shows a countdown", /seconds/.test($("mode-hud").textContent),
+      $("mode-hud").textContent.replace(/\s+/g, " ").trim().slice(0, 50));
+
+// A Speed Run answer must reach the SAME recorder Quick Battle uses. If it did
+// not, the review list and the daily goal would silently miss everything played
+// in the premium modes. Counting the day's `seen` proves recordAttempt ran,
+// whichever way the answer went.
+function daySeen() {
+    const s = JSON.parse(window.localStorage.getItem("reviseGoStats") || "{}");
+    const today = new Date().toISOString().slice(0, 10);
+    const row = (s.days || {})[today];
+    return typeof row === "number" ? row : (row && row.seen) || 0;
+}
+const seenBefore = daySeen();
+$("mode-answers").children[0].click();
+check("Speed Run feeds the shared stats and review list",
+      daySeen() === seenBefore + 1, seenBefore + " -> " + daySeen());
+check("Speed Run gives feedback", $("mode-feedback").textContent.length > 0,
+      $("mode-feedback").textContent.slice(0, 40));
+
+window.quitMode();
+check("quitting a mode returns to the arcade",
+      $("home-screen").classList.contains("active"));
+
+// Boss Battle
+window.startPremiumGame("Boss Battle");
+window.startModeWithSubject("");
+check("Boss Battle starts", $("mode-screen").classList.contains("active"));
+check("Boss Battle shows a boss health bar",
+      !!$("mode-hud").querySelector(".hud-boss-fill"));
+check("Boss Battle shows player health", /health/.test($("mode-hud").textContent));
+window.quitMode();
+
+check("personal bests are stored per mode",
+      typeof window.getBest === "function" && typeof window.getBest("speed-run") === "number",
+      String(window.getBest("speed-run")));
+
+// ---- progress charts --------------------------------------------------------
+window.openProgress();
+const activity = $("activity-chart");
+check("activity chart renders as inline SVG", !!activity.querySelector("svg"));
+check("activity chart has one bar per day",
+      activity.querySelectorAll("rect").length === 14,
+      activity.querySelectorAll("rect").length + " bars");
+check("activity chart bars carry hover titles",
+      !!activity.querySelector("rect title"));
+check("activity chart is labelled for screen readers",
+      /aria-label/.test(activity.innerHTML));
+check("activity chart has a table fallback",
+      $("activity-table").querySelectorAll("tr").length > 1,
+      $("activity-table").querySelectorAll("tr").length + " rows");
+check("personal bests grid renders", $("bests-grid").children.length === 4,
+      $("bests-grid").children.length + " tiles");
+
+// Only ONE series per chart, which is what makes the theme's green/gold pair
+// (delta-E 6.6 under protanopia) safe — they are never adjacent categories.
+const chartCss = fs.readFileSync(path.join(ROOT, "style.css"), "utf8");
+check("charts use one hue for bars and one for the line",
+      /\.chart \.bar \{ fill: var\(--primary\)/.test(chartCss) &&
+      /stroke: var\(--gold\)/.test(chartCss));
+
+// ---- premium page -----------------------------------------------------------
+window.showScreen("premium-screen");
+check("premium page shows both plans",
+      window.document.querySelectorAll(".plan").length === 2);
+check("premium page has an FAQ",
+      window.document.querySelectorAll(".faq details").length >= 4,
+      window.document.querySelectorAll(".faq details").length + " questions");
+check("the paid plan names real, built features",
+      /Speed Run/.test(window.document.querySelector(".plan.best").textContent) &&
+      /Boss Battle/.test(window.document.querySelector(".plan.best").textContent));
+
+// ---- profile page -----------------------------------------------------------
+window.showScreen("profile-screen");
+check("avatar picker renders", $("avatar-picker").children.length === 6,
+      $("avatar-picker").children.length + " colours");
+$("avatar-picker").children[2].click();
+check("choosing an avatar saves it",
+      window.localStorage.getItem("reviseGoAvatar") === "green",
+      String(window.localStorage.getItem("reviseGoAvatar")));
+check("achievements show progress, not just locked",
+      window.document.querySelectorAll(".achievement-row .achievement-fill").length > 0,
+      window.document.querySelectorAll(".achievement-row").length + " achievements");
+check("profile shows how long you've played",
+      /Playing for/.test($("profile-since").textContent),
+      $("profile-since").textContent);
+check("export and import controls exist",
+      !!$("export-save") && !!$("import-save") && !!$("import-file"));
 
 // ---- report ----------------------------------------------------------------
 let failed = 0;
