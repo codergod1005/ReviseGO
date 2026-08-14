@@ -2618,3 +2618,193 @@ footer {
     }
 
 }
+
+
+/* =========================================================
+   LEVEL UP POPUP
+========================================================= */
+
+.level-up-popup {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 9999;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    pointer-events: none;
+
+    background:
+        rgba(0, 0, 0, 0.7);
+
+    opacity: 0;
+
+    transition:
+        opacity 0.3s ease;
+}
+
+
+.level-up-popup.show {
+
+    opacity: 1;
+
+}
+
+
+.level-up-popup .level-up-content {
+
+    width: min(90%, 500px);
+
+    padding: 45px 30px;
+
+    text-align: center;
+
+    border-radius: 30px;
+
+    border:
+        1px solid
+        rgba(139, 92, 246, 0.5);
+
+    background:
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(139, 92, 246, 0.3),
+            transparent 55%
+        ),
+        var(--card);
+
+    box-shadow:
+        0 30px 80px
+        rgba(0, 0, 0, 0.5);
+
+    transform:
+        scale(0.75);
+
+    transition:
+        transform 0.35s ease;
+}
+
+
+.level-up-popup.show
+.level-up-content {
+
+    transform:
+        scale(1);
+
+}
+
+
+.level-up-stars {
+
+    font-size: 35px;
+
+    margin-bottom: 15px;
+
+    animation:
+        levelStars 0.8s ease infinite alternate;
+}
+
+
+.level-up-label {
+
+    color:
+        var(--purple-light);
+
+    font-size: 16px;
+
+    font-weight: 900;
+
+    letter-spacing: 3px;
+
+    margin-bottom: 5px;
+}
+
+
+.level-up-number {
+
+    font-family:
+        "Baloo 2",
+        sans-serif;
+
+    font-size:
+        clamp(80px, 15vw, 120px);
+
+    line-height: 0.9;
+
+    font-weight: 800;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--purple),
+            var(--pink)
+        );
+
+    background-clip: text;
+
+    -webkit-background-clip: text;
+
+    color: transparent;
+
+    margin-bottom: 15px;
+}
+
+
+.level-up-message {
+
+    color:
+        var(--muted);
+
+    font-size: 17px;
+
+    font-weight: 800;
+}
+
+
+@keyframes levelStars {
+
+    from {
+
+        transform:
+            scale(1);
+
+    }
+
+    to {
+
+        transform:
+            scale(1.15);
+
+    }
+
+}
+
+
+@media (max-width: 500px) {
+
+    .level-up-popup .level-up-content {
+
+        padding:
+            35px 20px;
+
+    }
+
+    .level-up-stars {
+
+        font-size: 28px;
+
+    }
+
+    .level-up-message {
+
+        font-size: 15px;
+
+    }
+
+}
