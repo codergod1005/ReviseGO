@@ -194,8 +194,13 @@
 
     window.finishGame = function () {
         const out = _finishGame.apply(this, arguments);
+        // The bonus is awarded BEFORE the breakdown renders, so the XP total on
+        // screen already includes it — showing a breakdown that does not add up
+        // to the number beside it is worse than showing no breakdown.
+        renderXPBreakdown(awardEndOfGameBonus());
         renderResultMistakes();
         refreshHome();
+        renderGameLocks();
         return out;
     };
 
@@ -535,6 +540,322 @@
 
 
     /* =====================================================
+       LEVEL UP
+       =====================================================
+
+       app.js already detected a level gain and threw up a small popup
+       that faded on a timer. This replaces it with something that
+       actually reads as a reward: the number counts up, the XP bar
+       fills from where it was to where it now is, and it waits for
+       you rather than vanishing while you are still reading it.
+
+       It is also announced to screen readers and dismissible with
+       Escape — a modal that traps you until a timer expires is a
+       modal that has gone wrong.
+    ===================================================== */
+
+    function levelBounds(level) {
+        // Mirrors getLevelFromXP in app.js: 500 XP for level 2, then +250 each
+        // time. Derived rather than duplicated so the two cannot drift apart.
+        let need = 500, total = 0;
+        for (let l = 1; l < level; l++) { total += need; need += 250; }
+        return { start: total, need: need };
+    }
+
+    window.showLevelUp = function (level) {
+        const existing = document.querySelector(".level-up-popup");
+        if (existing) existing.remove();
+
+        const popup = document.createElement("div");
+        popup.className = "level-up-popup";
+        popup.setAttribute("role", "alertdialog");
+        popup.setAttribute("aria-live", "assertive");
+        popup.setAttribute("aria-label", "Level up. You reached level " + level);
+
+        popup.innerHTML =
+            '<div class="level-up-content">' +
+                '<div class="level-up-burst" aria-hidden="true">' +
+                    new Array(10).fill(0).map((_, i) =>
+                        '<i style="--a:' + (i * 36) + 'deg"></i>').join("") +
+                "</div>" +
+                '<div class="level-up-stars" aria-hidden="true">' +
+                    svg("i-star", "icon-fill") + "</div>" +
+                '<div class="level-up-label">Level up!</div>' +
+                '<div class="level-up-number" id="level-up-number">' + level + "</div>" +
+                '<div class="level-up-bar"><div class="level-up-bar-fill" id="level-up-fill"></div></div>' +
+                '<div class="level-up-message" id="level-up-message"></div>' +
+                '<button class="main-button" id="level-up-close">Keep going</button>' +
+            "</div>";
+
+        document.body.appendChild(popup);
+
+        const numberEl = popup.querySelector("#level-up-number");
+        const fill = popup.querySelector("#level-up-fill");
+        const msg = popup.querySelector("#level-up-message");
+        const close = popup.querySelector("#level-up-close");
+
+        const totalXP = Number(localStorage.getItem("reviseGoXP")) || 0;
+        const bounds = levelBounds(level);
+        const into = Math.max(0, totalXP - bounds.start);
+        const pctInto = Math.min(100, Math.round((into / bounds.need) * 100));
+
+        msg.textContent = into + " / " + bounds.need + " XP towards level " + (level + 1);
+
+        const reduced = window.matchMedia &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        if (reduced) {
+            // Still shows the same information — it just arrives instead of moving.
+            fill.style.width = pctInto + "%";
+        } else {
+            // Count the number up from the previous level, and fill the bar from
+            // empty, on the next frame so the browser has a start value to animate
+            // FROM. Setting both in the same frame animates nothing at all.
+            numberEl.textContent = Math.max(1, level - 1);
+            fill.style.width = "0%";
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                numberEl.textContent = level;
+                numberEl.classList.add("bump");
+                fill.style.width = pctInto + "%";
+            }));
+        }
+
+        function dismiss() {
+            popup.classList.add("closing");
+            setTimeout(() => popup.remove(), 200);
+            document.removeEventListener("keydown", onKey);
+        }
+
+        function onKey(e) {
+            if (e.key === "Escape" || e.key === "Enter") { e.preventDefault(); dismiss(); }
+        }
+
+        close.addEventListener("click", dismiss);
+        popup.addEventListener("click", e => { if (e.target === popup) dismiss(); });
+        document.addEventListener("keydown", onKey);
+        close.focus();
+
+        refreshHome();
+    };
+
+
+    /* =====================================================
+       END-OF-GAME XP REWARDS
+       =====================================================
+
+       Per-question XP alone made a 10/10 round feel the same as a
+       6/10 one — you got a bit more, and nothing said so. These are
+       the bonuses worth actually chasing, shown as a breakdown so the
+       number on screen is explainable rather than mysterious.
+    ===================================================== */
+
+    function awardEndOfGameBonus() {
+        const total = TOTAL_QUESTIONS;
+        const accuracy = Math.round((correctAnswers / total) * 100);
+        const rows = [];
+
+        if (correctAnswers === total) {
+            rows.push(["Perfect round", 250]);
+        } else if (accuracy >= 80) {
+            rows.push(["80%+ accuracy", 120]);
+        } else if (accuracy >= 50) {
+            rows.push(["Half marks or better", 50]);
+        }
+
+        if (lives === 3 && correctAnswers < total) rows.push(["No lives lost", 75]);
+        if (bestCombo >= 10) rows.push(["Combo of " + bestCombo, 100]);
+        else if (bestCombo >= 5) rows.push(["Combo of " + bestCombo, 40]);
+
+        // Finishing at all is worth something. Turning up is most of revision.
+        rows.push(["Round complete", 25]);
+
+        const bonus = rows.reduce((n, r) => n + r[1], 0);
+
+        if (bonus > 0 && typeof saveXP === "function") {
+            const before = Number(localStorage.getItem("reviseGoXP")) || 0;
+            saveXP(bonus);
+            const after = Number(localStorage.getItem("reviseGoXP")) || 0;
+            // saveXP does not itself check for a level gain, so a bonus that
+            // pushes you over the line has to be checked here or the level-up
+            // would not appear until the next question you answered.
+            if (typeof checkForLevelUp === "function") checkForLevelUp(before, after);
+            if (typeof updateLevelDisplay === "function") updateLevelDisplay();
+        }
+
+        return { rows: rows, bonus: bonus };
+    }
+
+    function renderXPBreakdown(result) {
+        const host = document.getElementById("xp-breakdown");
+        if (!host) return;
+
+        host.innerHTML =
+            '<div class="xp-breakdown">' +
+                '<div class="xp-breakdown-head">' +
+                    "<span>Bonus XP</span><strong>+" + result.bonus + "</strong>" +
+                "</div>" +
+                result.rows.map(r =>
+                    '<div class="xp-row"><span>' + escapeHTML(r[0]) + "</span>" +
+                    "<strong>+" + r[1] + "</strong></div>").join("") +
+            "</div>";
+    }
+
+
+    /* =====================================================
+       PROFILES — the "account" UI
+    ===================================================== */
+
+    function renderProfileBar() {
+        const host = document.getElementById("profile-switcher");
+        if (!host || !window.Profiles) return;
+
+        const all = Profiles.list();
+        const active = Profiles.activeId();
+
+        host.innerHTML =
+            all.map(p =>
+                '<button class="profile-chip' + (p.id === active ? " on" : "") + '"' +
+                ' data-id="' + p.id + '"' +
+                (p.id === active ? ' aria-current="true"' : "") + ">" +
+                svg("i-user") + escapeHTML(p.name) + "</button>"
+            ).join("") +
+            (all.length < 6
+                ? '<button class="profile-chip add" id="add-profile">+ New player</button>'
+                : "");
+
+        host.querySelectorAll(".profile-chip[data-id]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                if (btn.dataset.id === Profiles.activeId()) return;
+                Profiles.switchTo(btn.dataset.id);
+                // Everything downstream reads localStorage, which now points at a
+                // different save — so the page is reloaded rather than trying to
+                // hand-refresh every number app.js has already rendered.
+                location.reload();
+            });
+        });
+
+        const add = host.querySelector("#add-profile");
+        if (add) {
+            add.addEventListener("click", () => {
+                const name = prompt("Name for the new player?");
+                if (!name) return;
+                if (!Profiles.create(name)) return;
+                const created = Profiles.list().slice(-1)[0];
+                Profiles.switchTo(created.id);
+                location.reload();
+            });
+        }
+
+        const nameEl = document.getElementById("profile-name");
+        if (nameEl) nameEl.textContent = Profiles.name();
+
+        const del = document.getElementById("delete-profile");
+        if (del) {
+            del.style.display = Profiles.list().length > 1 ? "" : "none";
+            del.onclick = function () {
+                const p = Profiles.active();
+                if (!p) return;
+                if (!confirm('Delete "' + p.name + '"? Their XP, level and review list ' +
+                             "go with them, and it cannot be undone.")) return;
+                Profiles.remove(p.id);
+                location.reload();
+            };
+        }
+    }
+
+
+    /* =====================================================
+       GAME LOCKS
+    ===================================================== */
+
+    function renderGameLocks() {
+        if (!window.GAMES) return;
+
+        GAMES.forEach(game => {
+            const card = document.querySelector('[data-game="' + game.id + '"]');
+            if (!card) return;
+
+            const state = gameLockState(game);
+            const tag = card.querySelector(".game-tag");
+            const lock = card.querySelector(".lock");
+
+            card.classList.toggle("locked", state.locked);
+
+            if (tag) {
+                tag.textContent = state.locked
+                    ? state.message
+                    : (game.requiresPremium ? "Unlocked" : "Quick play");
+            }
+
+            if (lock) lock.style.display = state.locked ? "" : "none";
+
+            // The label has to say WHY it is locked, or a locked card is just a
+            // dead button. Level gates and paywalls need different actions.
+            card.setAttribute("aria-label",
+                game.name + (state.locked ? " — " + state.message : " — available"));
+        });
+    }
+
+
+    /* =====================================================
+       PREMIUM SCREEN
+    ===================================================== */
+
+    function renderPremium() {
+        const payBtn = document.getElementById("pay-button");
+        const codeBox = document.getElementById("code-box");
+        const status = document.getElementById("premium-status");
+        if (!window.Premium) return;
+
+        const unlocked = Premium.isUnlocked();
+
+        if (status) {
+            status.textContent = unlocked
+                ? "Premium is active on this device."
+                : "";
+        }
+
+        if (codeBox) codeBox.style.display = unlocked ? "none" : "";
+
+        if (payBtn) {
+            payBtn.style.display = unlocked ? "none" : "";
+            payBtn.onclick = function () {
+                if (!Premium.paymentLink) {
+                    // Says what is actually true rather than opening a broken tab.
+                    alert("Payment isn't connected yet. Add a Stripe Payment Link to " +
+                          "PAYMENT_LINK in profile.js and this button will open checkout.");
+                    return;
+                }
+                window.open(Premium.paymentLink, "_blank", "noopener");
+            };
+        }
+
+        const redeem = document.getElementById("redeem-button");
+        const input = document.getElementById("code-input");
+        const note = document.getElementById("code-note");
+
+        if (redeem && input) {
+            redeem.onclick = function () {
+                const result = Premium.redeem(input.value);
+                if (note) {
+                    note.textContent = result.message;
+                    note.className = "code-note " + (result.ok ? "ok" : "bad");
+                }
+                if (result.ok) {
+                    input.value = "";
+                    renderPremium();
+                    renderGameLocks();
+                    if (typeof updatePremiumScreen === "function") updatePremiumScreen();
+                }
+            };
+            input.addEventListener("keydown", e => {
+                if (e.key === "Enter") { e.preventDefault(); redeem.click(); }
+            });
+        }
+    }
+
+
+    /* =====================================================
        BOOT
     ===================================================== */
 
@@ -542,6 +863,8 @@
         refreshHome();
         renderLives();
         labelAnswerKeys();
+        renderProfileBar();
+        renderGameLocks();
     }
 
     if (document.readyState === "loading") {
@@ -555,7 +878,9 @@
     const _showScreen = window.showScreen;
     window.showScreen = function (id) {
         const out = _showScreen.apply(this, arguments);
-        if (id === "home-screen") refreshHome();
+        if (id === "home-screen") { refreshHome(); renderGameLocks(); }
+        if (id === "premium-screen") renderPremium();
+        if (id === "profile-screen") renderProfileBar();
         return out;
     };
 

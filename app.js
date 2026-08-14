@@ -201,7 +201,7 @@ function updatePremiumScreen() {
         if (premiumTitle) {
 
             premiumTitle.textContent =
-                "Premium Unlocked 🎉";
+                "Premium Unlocked";
         }
 
 
@@ -215,7 +215,7 @@ function updatePremiumScreen() {
         if (premiumButton) {
 
             premiumButton.textContent =
-                "✅ Premium Unlocked";
+                "Premium Unlocked";
 
             premiumButton.disabled =
                 true;
@@ -233,7 +233,7 @@ function updatePremiumScreen() {
         if (premiumButton) {
 
             premiumButton.textContent =
-                "🔓 Unlock Premium";
+                "Unlock Premium";
 
             premiumButton.disabled =
                 false;
@@ -620,7 +620,7 @@ function showLevelUp(level) {
         <div class="level-up-content">
 
             <div class="level-up-stars">
-                ✨ ⭐ ✨
+                <svg class="icon icon-fill" aria-hidden="true"><use href="#i-star"/></svg>
             </div>
 
             <div class="level-up-label">
@@ -632,7 +632,7 @@ function showLevelUp(level) {
             </div>
 
             <div class="level-up-message">
-                You're getting stronger 🔥
+                You're getting stronger
             </div>
 
         </div>
@@ -1008,7 +1008,7 @@ function answerQuestion(
 
 
         feedback.textContent =
-            `⚡ Correct! +${earnedXP} XP — ${question.explanation}`;
+            `Correct! +${earnedXP} XP — ${question.explanation}`;
 
 
         feedback.classList
@@ -1054,7 +1054,7 @@ function answerQuestion(
 
 
         feedback.textContent =
-            `💥 Not quite! ${question.explanation}`;
+            `Not quite! ${question.explanation}`;
 
 
         feedback.classList
@@ -1279,10 +1279,10 @@ function updateGameStats() {
             );
 
         livesElement.textContent =
-            "❤️".repeat(
+            "●".repeat(
                 shown
             ) +
-            "🖤".repeat(
+            "○".repeat(
                 3 - shown
             );
     }
@@ -1478,7 +1478,7 @@ function showStreakBonus(
     popup.innerHTML = `
 
         <div class="streak-bonus-fire">
-            🔥
+            <svg class="icon icon-fill" aria-hidden="true"><use href="#i-flame"/></svg>
         </div>
 
         <div>
@@ -1714,50 +1714,50 @@ function finishGame() {
     ) {
 
         title =
-            "ABSOLUTE BEAST 🔥";
+            "Absolute beast";
 
         message =
             "That was seriously good.";
 
         icon =
-            "🏆";
+            "i-trophy";
 
     } else if (
         percentage >= 70
     ) {
 
         title =
-            "Nice work! ⚡";
+            "Nice work!";
 
         message =
             "You've got a solid score.";
 
         icon =
-            "⚡";
+            "i-bolt";
 
     } else if (
         percentage >= 50
     ) {
 
         title =
-            "Not bad 👀";
+            "Not bad";
 
         message =
             "You've got some topics to work on.";
 
         icon =
-            "🎯";
+            "i-target";
 
     } else {
 
         title =
-            "We go again 💪";
+            "We go again";
 
         message =
             "Don't worry. Keep practising.";
 
         icon =
-            "💪";
+            "i-flame";
     }
 
 
@@ -2026,7 +2026,7 @@ const achievements = [
             "first_win",
 
         name:
-            "🎖 First Victory",
+            "First Victory",
 
         condition:
             player =>
@@ -2040,7 +2040,7 @@ const achievements = [
             "combo_10",
 
         name:
-            "🔥 Combo King",
+            "Combo King",
 
         condition:
             player =>
@@ -2054,7 +2054,7 @@ const achievements = [
             "games_25",
 
         name:
-            "⚡ Veteran",
+            "Veteran",
 
         condition:
             player =>
@@ -2068,7 +2068,7 @@ const achievements = [
             "questions_100",
 
         name:
-            "📚 Scholar",
+            "Scholar",
 
         condition:
             player =>
@@ -2082,7 +2082,7 @@ const achievements = [
             "streak_7",
 
         name:
-            "🔥 Week Warrior",
+            "Week Warrior",
 
         condition:
             player =>
@@ -2152,7 +2152,7 @@ function showAchievement(
     popup.innerHTML = `
 
         <div>
-            🏆 Achievement Unlocked
+            <svg class="icon " aria-hidden="true"><use href="#i-trophy"/></svg> Achievement Unlocked
         </div>
 
         <strong>
@@ -2545,8 +2545,8 @@ function renderProfileAchievements() {
 
                     ${
                         unlocked
-                            ? "🏆"
-                            : "🔒"
+                            ? '<svg class="icon " aria-hidden="true"><use href="#i-trophy"/></svg>'
+                            : '<svg class="icon " aria-hidden="true"><use href="#i-lock"/></svg>'
                     }
 
                 </div>

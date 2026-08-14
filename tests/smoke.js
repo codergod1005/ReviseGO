@@ -32,7 +32,7 @@ const { window } = dom;
 // elements. window.eval() would run them in a function scope, where app.js's
 // top-level `const questions` never becomes a global — which is a property of
 // the harness, not of the page.
-for (const f of ["data/questions.js", "app.js", "enhance.js"]) {
+for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js"]) {
     const el = window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     try {
@@ -165,6 +165,147 @@ check("daily goal ring updated", $("goal-count").textContent !== "0/20",
       $("goal-count").textContent);
 check("review badge shows a count", $("mistake-count-badge").textContent.trim() !== "",
       "'" + $("mistake-count-badge").textContent + "'");
+
+// ---- no emoji anywhere in the source ---------------------------------------
+// The interface is SVG icons now; an emoji creeping back means a glyph that
+// renders differently on every platform and reads aloud as "collision".
+const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{2B50}\u{2764}]/u;
+["app.js", "enhance.js", "profile.js", "index.html", "style.css"].forEach(f => {
+    const text = fs.readFileSync(path.join(ROOT, f), "utf8");
+    const hit = text.match(EMOJI);
+    check("no emoji in " + f, !hit, hit ? "found " + JSON.stringify(hit[0]) : "clean");
+});
+
+// ---- XP and level survive a reload -----------------------------------------
+const xpNow = Number(window.localStorage.getItem("reviseGoXP")) || 0;
+check("XP was earned and saved", xpNow > 0, xpNow + " XP");
+
+// Rebuild the page from the SAME storage, exactly as a refresh would.
+const store = {};
+for (let i = 0; i < window.localStorage.length; i++) {
+    const k = window.localStorage.key(i);
+    store[k] = window.localStorage.getItem(k);
+}
+
+const dom2 = new JSDOM(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), {
+    runScripts: "dangerously", url: "http://localhost/",
+    virtualConsole: vc, pretendToBeVisual: true,
+});
+Object.keys(store).forEach(k => dom2.window.localStorage.setItem(k, store[k]));
+for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js"]) {
+    const el = dom2.window.document.createElement("script");
+    el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
+    dom2.window.document.body.appendChild(el);
+}
+dom2.window.document.dispatchEvent(new dom2.window.Event("DOMContentLoaded"));
+
+const level2 = dom2.window.document.querySelector(".player-level").textContent.trim();
+check("level survives a refresh", /LEVEL \d+/.test(level2), level2);
+check("XP survives a refresh",
+      (Number(dom2.window.localStorage.getItem("reviseGoXP")) || 0) === xpNow,
+      dom2.window.localStorage.getItem("reviseGoXP"));
+check("total XP shown on the bar after refresh",
+      dom2.window.document.getElementById("total-xp").textContent.trim() !== "0",
+      dom2.window.document.getElementById("total-xp").textContent);
+
+// ---- profiles ---------------------------------------------------------------
+const P = window.Profiles;
+check("a default profile exists", P && P.list().length === 1, JSON.stringify(P.list()));
+check("existing save is adopted, not orphaned", P.activeId() === "p1",
+      "active=" + P.activeId());
+
+const made = P.create("Ola");
+check("a second profile can be created", !!made && P.list().length === 2, JSON.stringify(made));
+
+P.switchTo(made.id);
+check("switching changes the active profile", P.activeId() === made.id);
+check("the new profile starts with no XP",
+      (Number(window.localStorage.getItem("reviseGoXP")) || 0) === 0,
+      String(window.localStorage.getItem("reviseGoXP")));
+
+P.switchTo("p1");
+check("switching back restores the original XP",
+      (Number(window.localStorage.getItem("reviseGoXP")) || 0) === xpNow,
+      window.localStorage.getItem("reviseGoXP"));
+
+// Deleting must take that player's saves with it, or a reused id inherits them.
+P.switchTo(made.id);
+window.localStorage.setItem("reviseGoXP", "999");
+P.remove(made.id);
+check("deleting a profile removes it", P.list().length === 1);
+check("deleting a profile deletes its save",
+      window.localStorage.getItem("reviseGoXP::" + made.id) === null,
+      String(window.localStorage.getItem("reviseGoXP::" + made.id)));
+check("the last profile cannot be deleted", P.remove("p1") === false && P.list().length === 1);
+
+// ---- premium ----------------------------------------------------------------
+const PR = window.Premium;
+check("premium starts locked", PR.isUnlocked() === false);
+check("a wrong code is rejected", PR.redeem("NOPE").ok === false, PR.redeem("NOPE").message);
+check("an empty code is rejected", PR.redeem("").ok === false);
+check("a valid code unlocks premium",
+      PR.redeem("arcade-gold").ok === true && PR.isUnlocked() === true,
+      "case-insensitive redeem");
+check("premium is NOT per-profile (bought once for the device)",
+      window.localStorage.getItem("reviseGoPremium") === "true");
+check("no card form exists anywhere",
+      !/type=["']?(card|cc-number)|cardnumber|card-number/i.test(
+          fs.readFileSync(path.join(ROOT, "index.html"), "utf8")),
+      "payment goes to Stripe's hosted page");
+
+// ---- game unlocks -----------------------------------------------------------
+const boss = window.GAMES.filter(g => g.id === "boss-battle")[0];
+check("game registry exists", window.GAMES.length === 3, window.GAMES.length + " games");
+window.localStorage.setItem("reviseGoXP", "0");
+const lockedAt1 = window.gameLockState(boss);
+check("a high-level game is locked at level 1",
+      lockedAt1.locked && lockedAt1.reason === "level", lockedAt1.message);
+// Level is checked before premium: selling premium for a game you still cannot
+// play would be selling something that does not do what the buyer thinks.
+check("the level reason wins over the premium reason",
+      lockedAt1.message.indexOf("level") !== -1, lockedAt1.message);
+window.localStorage.setItem("reviseGoXP", "999999");
+check("with the level met and premium bought, it unlocks",
+      window.gameLockState(boss).locked === false);
+
+// ---- level up ---------------------------------------------------------------
+window.showLevelUp(4);
+const popup = window.document.querySelector(".level-up-popup");
+check("level-up popup appears", !!popup);
+// The visible number COUNTS UP, so it deliberately starts at the previous level
+// and lands on the new one a frame later. Asserting either value would test
+// nothing, so this checks the announced label, which is correct immediately.
+check("level-up announces the new level",
+      popup.getAttribute("aria-label") === "Level up. You reached level 4",
+      popup.getAttribute("aria-label"));
+check("the number starts on the previous level to count up from",
+      popup.querySelector("#level-up-number").textContent === "3",
+      popup.querySelector("#level-up-number").textContent);
+check("level-up has an XP bar to fill", !!popup.querySelector("#level-up-fill"));
+check("level-up is announced to screen readers",
+      popup.getAttribute("role") === "alertdialog");
+check("level-up can be dismissed", !!popup.querySelector("#level-up-close"));
+popup.querySelector("#level-up-close").click();
+
+// ---- end-of-game XP bonus ---------------------------------------------------
+// Play a clean round: every answer correct, so the perfect-round bonus applies.
+window.localStorage.setItem("reviseGoXP", "0");
+window.startGame("Maths");
+let g2 = 0;
+while ($("game-screen").classList.contains("active") && g2++ < 40) {
+    const q = g("currentQuestions[currentQuestion]");
+    if (!q) break;
+    window.answerQuestion(q.answer, $("answers").children[q.answer]);
+    g("currentQuestion++");
+    if (g("currentQuestion") >= 10) { window.finishGame(); break; }
+    window.loadQuestion();
+}
+check("a bonus breakdown is shown", $("xp-breakdown").innerHTML.indexOf("Bonus XP") !== -1);
+check("a perfect round is rewarded",
+      $("xp-breakdown").innerHTML.indexOf("Perfect round") !== -1,
+      $("xp-breakdown").textContent.replace(/\s+/g, " ").slice(0, 80));
+const bonusXP = Number(window.localStorage.getItem("reviseGoXP")) || 0;
+check("bonus XP was actually banked", bonusXP > 0, bonusXP + " XP");
 
 // ---- report ----------------------------------------------------------------
 let failed = 0;

@@ -1328,9 +1328,210 @@ main {
     color: var(--gold);
 }
 
-.level-up-message { color: var(--text-soft); }
+.level-up-message { color: var(--text-soft); margin-bottom: var(--space-3); }
+
+/* The number counts up from the previous level; `bump` is the punch on arrival. */
+.level-up-number.bump { animation: bump 520ms var(--ease); }
+
+@keyframes bump {
+    0%   { transform: scale(0.6); opacity: 0.4; }
+    55%  { transform: scale(1.18); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+/* XP bar inside the popup, filling from where you were to where you are. */
+.level-up-bar {
+    height: 12px;
+    margin: var(--space-3) 0 10px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.level-up-bar-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary), var(--gold));
+    box-shadow: 0 0 18px rgba(255, 197, 61, 0.5);
+    transition: width 1100ms var(--ease);
+}
+
+/* Ten rays, rotated by a custom property, expanding once. Cheaper and calmer
+   than particle confetti, and it stops rather than looping forever. */
+.level-up-burst {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: var(--r-xl);
+}
+
+.level-up-burst i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 46px;
+    background: linear-gradient(var(--gold), transparent);
+    transform: rotate(var(--a)) translateY(-14px);
+    transform-origin: 50% 0;
+    opacity: 0;
+    animation: ray 900ms var(--ease) forwards;
+}
+
+@keyframes ray {
+    0%   { opacity: 0; transform: rotate(var(--a)) translateY(-6px) scaleY(0.3); }
+    35%  { opacity: 0.9; }
+    100% { opacity: 0; transform: rotate(var(--a)) translateY(-104px) scaleY(1); }
+}
+
+.level-up-content { position: relative; overflow: hidden; }
+
+.level-up-popup.closing { opacity: 0; transition: opacity 180ms ease-in; }
 
 .streak-bonus-fire { font-size: 1.2rem; }
+
+
+/* =========================================================
+   XP BREAKDOWN — why the number is the number
+========================================================= */
+
+.xp-breakdown {
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--gold);
+    border-radius: var(--r);
+}
+
+.xp-breakdown-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 9px;
+    margin-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-display);
+}
+
+.xp-breakdown-head strong { font-size: 1.5rem; color: var(--gold); }
+
+.xp-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: 3px 0;
+    font-size: 0.9rem;
+    color: var(--text-soft);
+}
+
+.xp-row strong { color: var(--gold); }
+
+
+/* =========================================================
+   PROFILES
+========================================================= */
+
+.players-note { font-size: 0.88rem; max-width: 52ch; }
+
+.profile-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: var(--space-3);
+}
+
+.profile-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 18px;
+    font-weight: 600;
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    transition: border-color var(--fast), background var(--fast), transform var(--fast);
+}
+
+.profile-chip:hover { background: var(--card-hover); border-color: var(--primary); }
+.profile-chip:active { transform: translateY(1px); }
+
+.profile-chip.on {
+    color: var(--primary-ink);
+    background: var(--primary);
+    border-color: transparent;
+}
+
+.profile-chip.add { color: var(--muted); border-style: dashed; }
+.profile-chip.add:hover { color: var(--text); }
+
+.danger-button {
+    min-height: 44px;
+    padding: 10px 20px;
+    font-weight: 600;
+    color: var(--wrong);
+    background: transparent;
+    border: 1px solid rgba(255, 92, 122, 0.35);
+    border-radius: 999px;
+    transition: background var(--fast), border-color var(--fast);
+}
+
+.danger-button:hover { background: rgba(255, 92, 122, 0.12); border-color: var(--wrong); }
+
+
+/* =========================================================
+   PREMIUM — unlock code
+========================================================= */
+
+.premium-status { color: var(--correct); font-weight: 600; margin-bottom: var(--space-2); }
+
+.code-box {
+    max-width: 440px;
+    margin: var(--space-4) auto 0;
+    padding: var(--space-3);
+    text-align: left;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+}
+
+.code-box label {
+    display: block;
+    margin-bottom: 9px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.code-row { display: flex; gap: 9px; flex-wrap: wrap; }
+
+.code-row input {
+    flex: 1;
+    min-width: 170px;
+    min-height: 48px;
+    padding: 12px 16px;
+    font: inherit;
+    font-family: var(--font-display);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+}
+
+.code-row input::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
+.code-row input:focus { border-color: var(--primary); }
+
+.code-row .secondary-button { min-height: 48px; padding: 12px 22px; }
+
+.code-note { margin-top: 10px; font-size: 0.85rem; min-height: 1.2em; }
+.code-note.ok { color: var(--correct); }
+.code-note.bad { color: var(--wrong); }
 
 
 /* =========================================================

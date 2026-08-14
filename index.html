@@ -251,7 +251,7 @@
     <div class="game-grid">
 
 
-        <button class="game-card featured" onclick="openSubjects()">
+        <button class="game-card featured" data-game="quick-battle" onclick="openSubjects()">
 
             <div class="game-icon">
                 <svg class="icon icon-fill" aria-hidden="true"><use href="#i-bolt"/></svg>
@@ -270,7 +270,8 @@
         </button>
 
 
-        <button class="game-card locked premium-game" onclick="openPremiumGame('Boss Battle')">
+        <button class="game-card locked premium-game" data-game="boss-battle"
+                onclick="openPremiumGame('Boss Battle')">
 
             <div class="game-icon">
                 <svg class="icon" aria-hidden="true"><use href="#i-ghost"/></svg>
@@ -289,7 +290,8 @@
         </button>
 
 
-        <button class="game-card locked premium-game" onclick="openPremiumGame('Speed Run')">
+        <button class="game-card locked premium-game" data-game="speed-run"
+                onclick="openPremiumGame('Speed Run')">
 
             <div class="game-icon">
                 <svg class="icon" aria-hidden="true"><use href="#i-timer"/></svg>
@@ -553,6 +555,8 @@
     </div>
 
 
+    <div id="xp-breakdown"></div>
+
     <div class="result-stats">
 
         <div class="result-stat">
@@ -722,12 +726,38 @@
         </div>
 
 
-        <button class="premium-button" onclick="unlockPremium()">
+        <p id="premium-status" class="premium-status"></p>
+
+        <button class="premium-button" id="pay-button">
             <svg class="icon" aria-hidden="true"><use href="#i-crown"/></svg>
-            Unlock Premium
+            Buy Premium
         </button>
 
-        <p class="premium-note">Premium games require a purchase.</p>
+
+        <!-- Redeeming a code, NOT a card form.
+             A static page has nowhere safe to put a secret key and must never
+             take card details itself, so payment happens on Stripe's own hosted
+             page and the buyer comes back with an unlock code. A checkout box
+             that looked real but wasn't would be worse than none — it teaches
+             people to type card numbers into anything that asks. -->
+        <div class="code-box" id="code-box">
+
+            <label for="code-input">Already bought it? Enter your unlock code</label>
+
+            <div class="code-row">
+                <input id="code-input" type="text" autocomplete="off"
+                       spellcheck="false" placeholder="ARCADE-GOLD">
+                <button class="secondary-button" id="redeem-button">Redeem</button>
+            </div>
+
+            <p class="code-note" id="code-note"></p>
+
+        </div>
+
+        <p class="premium-note">
+            Premium unlocks on this device. Payment is handled by Stripe — ReviseGo
+            never sees your card details.
+        </p>
 
     </div>
 
@@ -756,11 +786,30 @@
 
         <div>
             <p class="small-heading">Player profile</p>
-            <h1>Revision Warrior</h1>
+            <h1 id="profile-name">Player 1</h1>
             <p>Keep revising. Keep levelling up.</p>
         </div>
 
     </div>
+
+
+    <!-- Save slots, not sign-in. There is no server and no password, so the
+         wording says "on this device" rather than implying an account that
+         follows you around. -->
+    <div class="section-heading">
+        <div>
+            <p class="small-heading">Players</p>
+            <h2>Who's playing?</h2>
+            <p class="players-note">
+                Separate saves on this device — each player keeps their own XP,
+                level and review list. Nothing is synced to another device.
+            </p>
+        </div>
+    </div>
+
+    <div class="profile-switcher" id="profile-switcher"></div>
+
+    <button class="danger-button" id="delete-profile">Delete this player</button>
 
 
     <div class="profile-level-card">
@@ -869,6 +918,9 @@
 </footer>
 
 
+<!-- profile.js MUST come before app.js: app.js reads saved XP on its last line,
+     and profiles work by redirecting those reads to the active player. -->
+<script src="profile.js"></script>
 <script src="data/questions.js"></script>
 <script src="app.js"></script>
 <script src="enhance.js"></script>
