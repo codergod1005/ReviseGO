@@ -13,7 +13,8 @@ app.js            Quick Battle — questions, scoring, lives, XP, levels, achiev
 enhance.js        review, progress, charts, profile, level-up, XP bonuses (wraps app.js)
 modes.js          Speed Run and Boss Battle — their own loop, shared recorder
 accounts.js       sign-in, PBKDF2 hashing, friends and room logic
-social.js         the UI for the auth gate, friends and rooms
+social.js         the UI for the auth gate, friends, rooms and notifications
+focus.js          the pomodoro focus timer (from Brainify)
 data/questions.js the question bank
 tests/smoke.js    plays a full game headlessly and checks nothing broke
 ```
@@ -133,9 +134,41 @@ You cannot look someone up if there is nothing to look them up in. So both featu
 **exchanging codes**, which is the honest version of multiplayer with no backend. Nothing here
 pretends a friend is online.
 
-**Friends** — you each have a *player card*: one copyable blob holding your name, level, XP and
-streak. Send yours, paste theirs, and the leaderboard fills. Re-pasting a newer card is how a
-friend's numbers update, and the UI labels how old each row is rather than implying live data.
+**Friends use a two-way handshake**, modelled on GhostChat, where a request sits pending until
+the other person accepts. The first version here added a friend the moment you pasted their card
+— which made a *one-way* link: you had them, they had no idea you existed.
+
+1. You send a **request code**.
+2. They paste it. It lands under **Requests**, not in their friends list, and they accept or
+   decline.
+3. Accepting gives them an **accept code** to send back.
+4. You paste that, and you are connected both ways.
+
+More steps than a server would need, and the UI numbers them for that reason. What it is not is
+a lie about being connected.
+
+Also from GhostChat: **favourites** (starred friends pin above higher-XP strangers, since a
+starred friend is the one you actually want to beat) and a **notification bell** with an unread
+count, raising `friend_request`, `friend_accepted`, `challenge` and `room_result`. The list is
+capped at 40 — unbounded history in storage shared with every save file fills up.
+
+**Challenge a friend** creates a room named after them and hands you the code, so a challenge is
+the same seeded-question mechanism as a study room rather than a second half-built system.
+
+Every friend row is labelled with how old the data is. Re-pasting a newer card is how a friend's
+numbers update — there is nothing to poll.
+
+## Focus timer
+
+Borrowed from Brainify, which pairs its quiz with a study timer. A revision app that only does
+quizzes has nothing to offer the hour *before* the quiz, which is most of revision.
+
+25 on, 5 off, long break every fourth session. Finishing a focus block banks XP towards the same
+level as the games — a separate currency would make the timer feel like a different app.
+
+The countdown runs from a **timestamp, not a decrementing counter**. Background tabs get their
+timers throttled, so a counter-based timer silently runs slow exactly when someone has switched
+away to read their notes, which is the entire use case.
 
 **Study rooms** — a room code *seeds the question order*, so everyone who joins that code gets
 exactly the same ten questions in the same order. That is what makes the scores comparable. You

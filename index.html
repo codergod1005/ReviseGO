@@ -64,6 +64,19 @@
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
         </symbol>
 
+        <symbol id="i-bell" viewBox="0 0 24 24">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a2 2 0 0 0 3.4 0"/>
+        </symbol>
+
+        <symbol id="i-play" viewBox="0 0 24 24">
+            <path d="m6 3 14 9-14 9V3z"/>
+        </symbol>
+
+        <symbol id="i-pause" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16" rx="1"/>
+            <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </symbol>
+
         <symbol id="i-bolt" viewBox="0 0 24 24">
             <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
         </symbol>
@@ -233,6 +246,12 @@
         <button class="profile-button" onclick="openProfile()">
             <svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>
             <span id="topbar-username">Profile</span>
+        </button>
+
+        <button class="profile-button icon-only bell" id="notify-bell"
+                aria-label="Notifications" onclick="openNotifications()">
+            <svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>
+            <span class="notify-count" id="notify-count" hidden>0</span>
         </button>
 
         <button class="profile-button icon-only" id="sign-out" aria-label="Sign out" hidden>
@@ -469,6 +488,25 @@
                 <span class="game-tag">Friends</span>
                 <h3>Friends <span id="friend-count-badge"></span></h3>
                 <p>Swap player cards and see who's actually putting the hours in.</p>
+            </div>
+
+            <span class="play-arrow">
+                <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+            </span>
+
+        </button>
+
+
+        <button class="game-card" onclick="openFocus()">
+
+            <div class="game-icon">
+                <svg class="icon" aria-hidden="true"><use href="#i-timer"/></svg>
+            </div>
+
+            <div class="game-info">
+                <span class="game-tag">Focus</span>
+                <h3>Focus Timer</h3>
+                <p>25 minutes on, 5 off. Bank XP for time actually spent revising.</p>
             </div>
 
             <span class="play-arrow">
@@ -755,23 +793,46 @@
         </p>
     </div>
 
+    <!-- The handshake, in the order it happens. Numbering it is the difference
+         between "swap some codes" and knowing what to do next. -->
+    <ol class="how-it-works">
+        <li><b>Send</b> your request code to a friend.</li>
+        <li>They <b>paste</b> it and press Accept.</li>
+        <li>They send you the <b>accept code</b> it gives them.</li>
+        <li>You paste that, and you're connected both ways.</li>
+    </ol>
+
     <div class="share-box">
-        <label for="my-card">Your player card — send this to a friend</label>
+        <label for="my-card">1. Your request code — send this to a friend</label>
         <textarea id="my-card" readonly rows="3"></textarea>
         <div class="share-row">
-            <button class="secondary-button" id="copy-card">Copy my card</button>
+            <button class="secondary-button" id="copy-card">Copy my code</button>
+            <button class="secondary-button" id="mark-sent">I've sent it</button>
             <span class="share-code">Friend code: <strong id="my-friend-code">------</strong></span>
         </div>
     </div>
 
     <div class="share-box">
-        <label for="friend-card">Paste a friend's card</label>
-        <textarea id="friend-card" rows="3" placeholder="Paste the code they sent you"></textarea>
+        <label for="friend-card">2. Paste a code someone sent you</label>
+        <textarea id="friend-card" rows="3"
+                  placeholder="A request code, an accept code, or a friend's updated card"></textarea>
         <div class="share-row">
-            <button class="main-button" id="add-friend">Add friend</button>
+            <button class="main-button" id="add-friend">Continue</button>
         </div>
         <p class="code-note" id="friend-note"></p>
     </div>
+
+    <!-- Shown after accepting. Accepting is only half the handshake — without
+         sending this back, the friendship is one-way. -->
+    <div class="share-box accept-box" id="accept-code-box" hidden>
+        <strong>Send this back</strong>
+        <textarea readonly rows="3"></textarea>
+        <div class="share-row">
+            <button class="main-button" id="copy-accept">Copy accept code</button>
+        </div>
+    </div>
+
+    <div id="friend-requests"></div>
 
     <div class="section-heading">
         <div>
@@ -784,6 +845,78 @@
     </div>
 
     <div id="friends-board"></div>
+
+</section>
+
+
+<!-- =====================================================
+     NOTIFICATIONS
+===================================================== -->
+
+<section id="notify-screen" class="screen">
+
+    <button class="back-button" onclick="showScreen('home-screen')">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+        Back to Arcade
+    </button>
+
+    <div class="page-title">
+        <p class="small-heading">Notifications</p>
+        <h1>What you've missed</h1>
+        <p>Friend requests, challenges and room results turn up here.</p>
+    </div>
+
+    <div id="notify-list"></div>
+
+    <div class="result-buttons" style="justify-content:flex-start; margin-top: 22px;">
+        <button class="secondary-button" id="clear-notifications">Clear all</button>
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     FOCUS TIMER
+     Borrowed from Brainify, which pairs the quiz with a proper
+     study timer. A revision app that only does quizzes has nothing
+     to offer the hour before the quiz.
+===================================================== -->
+
+<section id="focus-screen" class="screen">
+
+    <button class="back-button" onclick="showScreen('home-screen')">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+        Back to Arcade
+    </button>
+
+    <div class="page-title">
+        <p class="small-heading">Focus</p>
+        <h1>Revise, then rest</h1>
+        <p>25 minutes on, 5 minutes off. Finish a session and you bank XP for it.</p>
+    </div>
+
+    <div class="focus-wrap">
+
+        <div class="focus-ring" id="focus-ring" style="--pct: 0" role="img"
+             aria-label="Focus timer">
+            <div class="focus-inner">
+                <span class="focus-phase" id="focus-phase">Focus</span>
+                <span class="focus-time" id="focus-time">25:00</span>
+                <span class="focus-round" id="focus-round">Session 1</span>
+            </div>
+        </div>
+
+        <div class="focus-buttons">
+            <button class="main-button" id="focus-toggle">
+                <svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>
+                <span>Start</span>
+            </button>
+            <button class="secondary-button" id="focus-reset">Reset</button>
+        </div>
+
+        <div class="stat-grid" id="focus-stats"></div>
+
+    </div>
 
 </section>
 
@@ -1403,6 +1536,7 @@
 <!-- accounts.js before social.js: the UI wires up what the logic exposes. -->
 <script src="accounts.js"></script>
 <script src="social.js"></script>
+<script src="focus.js"></script>
 
 
 </body>

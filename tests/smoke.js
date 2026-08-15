@@ -44,7 +44,7 @@ if (typeof window.TextEncoder === "undefined") window.TextEncoder = TextEncoder;
 // elements. window.eval() would run them in a function scope, where app.js's
 // top-level `const questions` never becomes a global — which is a property of
 // the harness, not of the page.
-for (const f of ["ui.js", "profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js"]) {
+for (const f of ["ui.js", "profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js", "focus.js"]) {
     const el = window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     try {
@@ -92,7 +92,7 @@ check("every icon reference resolves", missingIcons.size === 0,
       missingIcons.size ? "missing: " + [...missingIcons].join(", ") : `${symbolIds.size} symbols`);
 
 // Every getElementById in the JS must find something, or a feature is dead.
-const jsSrc = ["app.js", "enhance.js", "modes.js", "profile.js", "accounts.js", "social.js", "ui.js"]
+const jsSrc = ["app.js", "enhance.js", "modes.js", "profile.js", "accounts.js", "social.js", "focus.js", "ui.js"]
     .map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n");
 const wantedIds = [...jsSrc.matchAll(/getElementById\(\s*["'`]([\w-]+)["'`]/g)].map(m => m[1]);
 const missingIds = [...new Set(wantedIds)].filter(id => !$(id));
@@ -223,7 +223,7 @@ const dom2 = new JSDOM(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), {
     virtualConsole: vc, pretendToBeVisual: true,
 });
 Object.keys(store).forEach(k => dom2.window.localStorage.setItem(k, store[k]));
-for (const f of ["ui.js", "profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js"]) {
+for (const f of ["ui.js", "profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js", "focus.js"]) {
     const el = dom2.window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     dom2.window.document.body.appendChild(el);
@@ -497,39 +497,157 @@ check("export and import controls exist",
     check("changing the password changes the stored hash", hashBefore !== hashAfter);
     check("the new password works", (await A.signIn("ola_revises", "newpass1")).ok === true);
 
-    // ---- friends ------------------------------------------------------------
+    // The real app reloads after sign-in, which re-runs the gate. Here the gate
+    // has to be refreshed by hand, or `main` stays inert for the rest of the
+    // suite and every click below is silently swallowed — which is exactly what
+    // inert is supposed to do.
+    window.refreshAuthGate();
+    check("signing in lifts the gate",
+          !window.document.querySelector("main").hasAttribute("inert"));
+
+    // ---- friends: the two-way handshake -------------------------------------
+    // The first version added a friend the moment you pasted their card, which
+    // made a ONE-WAY link: you had them, they had no idea you existed. GhostChat
+    // keeps a request pending until the other person accepts, and so does this.
     const F = window.Friends;
-    const myCard = F.myCard();
-    check("a player card is produced", myCard.length > 20);
-    check("your own card is refused", F.add(myCard).ok === false,
-          F.add(myCard).message);
-    check("junk is refused as a card", F.add("not-a-card").ok === false);
 
-    // A friend's card, built the way a second device would produce one.
-    const friendCard = window.btoa(unescape(encodeURIComponent(JSON.stringify({
-        t: "revisego-card", code: "ZZZ234", name: "Daniel",
+    const encodeCard = (obj) =>
+        window.btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+
+    check("a request code is produced", F.requestCode().length > 20);
+    check("your own code is refused", F.receive(F.requestCode()).ok === false,
+          F.receive(F.requestCode()).message);
+    check("junk is refused", F.receive("not-a-card").ok === false);
+
+    // A request arriving from another device.
+    const theirRequest = encodeCard({
+        t: "revisego-request", code: "ZZZ234", name: "Daniel",
         xp: 99999, level: 9, answered: 400, correct: 380, streak: 5, at: Date.now()
-    }))));
-    check("a friend's card is accepted", F.add(friendCard).ok === true);
-    check("the friend is stored", F.list().length === 1, F.list().length + " friends");
+    });
 
-    const updated = F.add(friendCard);
-    check("re-pasting a card updates rather than duplicating",
-          updated.updated === true && F.list().length === 1);
+    const got = F.receive(theirRequest);
+    check("an incoming request is accepted as a REQUEST", got.ok && got.request === true);
+    check("a request does NOT make them a friend yet", F.list().length === 0,
+          "pending, not connected");
+    check("the request is listed as incoming", F.incoming().length === 1);
+    check("a duplicate request is refused", F.receive(theirRequest).ok === false);
 
+    check("an incoming request raises a notification",
+          window.Notify.list().some(n => n.type === "friend_request"),
+          window.Notify.unread() + " unread");
+
+    // Declining
+    const declineId = F.incoming()[0].id;
+    F.decline(declineId);
+    check("declining clears the request", F.incoming().length === 0);
+    check("declining does not add a friend", F.list().length === 0);
+
+    // Accepting
+    F.receive(theirRequest);
+    const accepted = F.accept(F.incoming()[0].id);
+    check("accepting works", accepted.ok === true, accepted.message);
+    check("accepting adds the friend", F.list().length === 1);
+    check("accepting clears the request", F.incoming().length === 0);
+    check("accepting returns a code to send BACK",
+          accepted.code && accepted.code.length > 20,
+          "without it the friendship stays one-way");
+
+    // The accept code completing the loop on the original sender's device.
+    const theirAccept = encodeCard({
+        t: "revisego-accept", code: "YYY777", name: "Trace",
+        xp: 4200, level: 3, answered: 90, correct: 70, streak: 2, at: Date.now()
+    });
+    F.markSent("Trace");
+    check("a sent request shows as outgoing", F.outgoing().length === 1);
+    const done = F.receive(theirAccept);
+    check("an accept code completes the friendship", done.ok === true, done.message);
+    check("the accepted friend is stored", F.list().length === 2);
+    check("the outgoing request is cleared once accepted", F.outgoing().length === 0);
+    check("accepting raises a notification",
+          window.Notify.list().some(n => n.type === "friend_accepted"));
+
+    // Refreshing stats
+    const refresh = encodeCard({
+        t: "revisego-card", code: "ZZZ234", name: "Daniel",
+        xp: 123456, level: 12, answered: 500, correct: 480, streak: 9, at: Date.now()
+    });
+    check("a card from an existing friend updates their stats",
+          F.receive(refresh).updated === true &&
+          F.list().filter(f => f.code === "ZZZ234")[0].xp === 123456);
+    check("a card from a stranger is refused",
+          F.receive(encodeCard({ t: "revisego-card", code: "NOPE11", name: "Nobody" })).ok === false,
+          "you have to be friends first");
+
+    // Favourites — GhostChat pins a favourite friend to the top.
+    check("a friend can be favourited", F.toggleFavourite("YYY777") === true);
     const board = F.leaderboard();
-    check("the leaderboard includes you and your friends", board.length === 2);
-    check("the leaderboard is sorted by XP", board[0].xp >= board[1].xp,
-          board.map(r => r.name + ":" + r.xp).join(", "));
+    check("favourites sort above higher XP",
+          board.filter(r => !r.me)[0].code === "YYY777",
+          board.map(r => r.name + (r.favourite ? "*" : "") + ":" + r.xp).join(", "));
+    check("favouriting toggles back off", F.toggleFavourite("YYY777") === false);
 
     window.openFriends();
     check("friends screen opens", $("friends-screen").classList.contains("active"));
     check("friends board renders rows",
-          $("friends-board").querySelectorAll(".board-row").length === 2);
+          $("friends-board").querySelectorAll(".board-row").length === 3);
     check("your own row is marked", !!$("friends-board").querySelector(".board-row.me"));
+    check("each friend has favourite, challenge and remove controls",
+          $("friends-board").querySelectorAll("[data-fav]").length === 2 &&
+          $("friends-board").querySelectorAll("[data-challenge]").length === 2);
 
     F.remove("ZZZ234");
+    F.remove("YYY777");
     check("a friend can be removed", F.list().length === 0);
+
+    // ---- notifications ------------------------------------------------------
+    const N = window.Notify;
+    N.clear();
+    check("notifications start empty", N.list().length === 0 && N.unread() === 0);
+    N.push("challenge", { name: "Daniel", room: "ABC234" });
+    check("a notification can be raised", N.unread() === 1);
+    check("a notification renders readable text",
+          /Daniel/.test(N.describe(N.list()[0])), N.describe(N.list()[0]));
+    check("an unknown notification type is ignored",
+          (function () { N.push("nonsense", {}); return N.list().length === 1; })());
+    window.openNotifications();
+    check("notifications screen opens", $("notify-screen").classList.contains("active"));
+    check("notifications render rows", $("notify-list").querySelectorAll(".notify-row").length === 1);
+    check("opening marks them read", N.unread() === 0);
+
+    // Capped, or it grows forever in storage shared with every save file.
+    for (let i = 0; i < 60; i++) N.push("challenge", { name: "X", room: "AAA111" });
+    check("notifications are capped", N.list().length <= 40, N.list().length + " kept");
+    N.clear();
+
+    // ---- focus timer (from Brainify) ----------------------------------------
+    // Wait for the last dialog's teardown first. A closing dialog keeps `main`
+    // inert for 160ms, and inert genuinely blocks clicks — so without this the
+    // button press below is swallowed. That is the feature working, not a bug.
+    await new Promise(r => setTimeout(r, 250));
+
+    window.openFocus();
+    check("focus screen opens", $("focus-screen").classList.contains("active"));
+    check("focus timer shows 25 minutes", $("focus-time").textContent === "25:00",
+          $("focus-time").textContent);
+    check("focus timer starts in the focus phase",
+          $("focus-phase").textContent === "Focus");
+    check("focus stats render", $("focus-stats").children.length === 3);
+    // Asserted as a TRANSITION rather than an absolute value, so the check does
+    // not silently depend on how many times anything above happened to click.
+    const labelNow = () => $("focus-toggle").querySelector("span").textContent.trim();
+    const iconNow = () => $("focus-toggle").querySelector("use").getAttribute("href");
+
+    const wasLabel = labelNow();
+    $("focus-toggle").click();
+    check("the start button changes state when pressed",
+          labelNow() !== wasLabel, wasLabel + " -> " + labelNow());
+    check("the play icon swaps to pause",
+          iconNow() === (labelNow() === "Pause" ? "#i-pause" : "#i-play"), iconNow());
+
+    const midLabel = labelNow();
+    $("focus-toggle").click();
+    check("pressing again flips it back", labelNow() !== midLabel,
+          midLabel + " -> " + labelNow());
 
     // ---- study rooms --------------------------------------------------------
     const R = window.Rooms;

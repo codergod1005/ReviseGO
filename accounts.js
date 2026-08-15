@@ -258,24 +258,121 @@
         catch (e) { return null; }
     }
 
+    /* =====================================================
+       NOTIFICATIONS
+       Lifted from GhostChat, which keeps a typed notification per
+       event and a bell with an unread count. The types here are the
+       ones ReviseGo can actually raise — there is no point carrying
+       "call" or "mention" across when nothing produces them.
+    ===================================================== */
+
+    const NOTIFY_KEY = "reviseGoNotifications";
+
+    window.Notify = {
+
+        TYPES: {
+            friend_request: { icon: "i-users", text: n => n.name + " wants to be friends" },
+            friend_accepted: { icon: "i-check", text: n => n.name + " accepted your request" },
+            challenge: { icon: "i-bolt", text: n => n.name + " challenged you — room " + n.room },
+            room_result: { icon: "i-trophy", text: n => n.name + " scored " + n.detail },
+            achievement: { icon: "i-trophy", text: n => "Achievement unlocked: " + n.detail }
+        },
+
+        list: function () {
+            const all = readJSON(NOTIFY_KEY, []);
+            return Array.isArray(all) ? all : [];
+        },
+
+        unread: function () {
+            return this.list().filter(n => !n.read).length;
+        },
+
+        push: function (type, fields) {
+            if (!this.TYPES[type]) return;
+            const all = this.list();
+            all.unshift(Object.assign({
+                id: "n" + Date.now().toString(36) + Math.floor(Math.random() * 1000),
+                type: type,
+                read: false,
+                at: Date.now()
+            }, fields || {}));
+            // Capped: an unbounded list would grow forever in storage that has a
+            // few megabytes total and is shared with every save file.
+            writeJSON(NOTIFY_KEY, all.slice(0, 40));
+        },
+
+        markAllRead: function () {
+            writeJSON(NOTIFY_KEY, this.list().map(n => Object.assign({}, n, { read: true })));
+        },
+
+        clear: function () { writeJSON(NOTIFY_KEY, []); },
+
+        describe: function (n) {
+            const t = this.TYPES[n.type];
+            return t ? t.text(n) : "";
+        },
+
+        iconFor: function (n) {
+            const t = this.TYPES[n.type];
+            return t ? t.icon : "i-star";
+        }
+    };
+
+
+    /* =====================================================
+       FRIENDS — request, accept, decline
+       =====================================================
+
+       The first version added a friend the moment you pasted their
+       card. That is not how friends work anywhere, including in
+       GhostChat, where a request sits pending until the other person
+       accepts — and it meant a one-way link: you had them, they had
+       no idea you existed.
+
+       With no server, the handshake is done with two codes:
+
+         1. You send a REQUEST code.
+         2. They paste it. It lands under "Requests" — not in their
+            friends list — and they accept or decline.
+         3. Accepting produces an ACCEPT code they send back.
+         4. You paste that, and the link is complete both ways.
+
+       It is more steps than a server would need, and the UI says so.
+       What it is not is a lie about being connected.
+    ===================================================== */
+
+    const REQUESTS_KEY = "reviseGoRequests";
+
+    function myProfileCard(kind) {
+        const a = Accounts.current();
+        if (!a) return null;
+        const xp = Number(localStorage.getItem("reviseGoXP")) || 0;
+        const player = typeof getPlayerData === "function" ? getPlayerData() : {};
+        return {
+            t: kind,
+            code: a.code,
+            name: a.username,
+            xp: xp,
+            level: typeof getLevelFromXP === "function" ? getLevelFromXP(xp) : 1,
+            answered: player.questionsAnswered || 0,
+            correct: player.correctAnswers || 0,
+            streak: player.streak || 0,
+            at: Date.now()
+        };
+    }
+
     window.Friends = {
 
+        /** The code you send to ask someone to be friends. */
+        requestCode: function () {
+            const card = myProfileCard("revisego-request");
+            return card ? encode(card) : "";
+        },
+
+        /** Your current stats, for refreshing a friend who already has you. */
         myCard: function () {
-            const a = Accounts.current();
-            if (!a) return "";
-            const xp = Number(localStorage.getItem("reviseGoXP")) || 0;
-            const player = typeof getPlayerData === "function" ? getPlayerData() : {};
-            return encode({
-                t: "revisego-card",
-                code: a.code,
-                name: a.username,
-                xp: xp,
-                level: typeof getLevelFromXP === "function" ? getLevelFromXP(xp) : 1,
-                answered: player.questionsAnswered || 0,
-                correct: player.correctAnswers || 0,
-                streak: player.streak || 0,
-                at: Date.now()
-            });
+            const card = myProfileCard("revisego-card");
+            return card ? encode(card) : "";
         },
 
         list: function () {
@@ -283,39 +380,144 @@
             return Array.isArray(f) ? f : [];
         },
 
-        add: function (cardText) {
-            const card = decode(cardText);
-            if (!card || card.t !== "revisego-card") {
-                return { ok: false, message: "That doesn't look like a ReviseGo player card." };
+        requests: function () {
+            const r = readJSON(REQUESTS_KEY, []);
+            return Array.isArray(r) ? r : [];
+        },
+
+        incoming: function () { return this.requests().filter(r => r.dir === "in"); },
+        outgoing: function () { return this.requests().filter(r => r.dir === "out"); },
+
+        /** Record that you've sent a request, so the UI can show it pending. */
+        markSent: function (label) {
+            const all = this.requests();
+            all.push({
+                id: "r" + Date.now().toString(36),
+                dir: "out",
+                name: String(label || "Someone").trim().slice(0, 20) || "Someone",
+                at: Date.now()
+            });
+            writeJSON(REQUESTS_KEY, all);
+        },
+
+        /**
+         * One entry point for every code someone pastes. Which of the three it is
+         * depends on the payload, not on which box it went into — asking a user to
+         * know whether they hold a "request" or an "accept" is asking them to do
+         * the app's job.
+         */
+        receive: function (text) {
+            const card = decode(text);
+            if (!card || String(card.t || "").indexOf("revisego-") !== 0) {
+                return { ok: false, message: "That doesn't look like a ReviseGo code." };
             }
 
             const me = Accounts.current();
             if (me && card.code === me.code) {
-                return { ok: false, message: "That's your own card." };
+                return { ok: false, message: "That's your own code." };
             }
 
-            const all = this.list();
-            const at = all.findIndex(f => f.code === card.code);
+            if (card.t === "revisego-request") return this._takeRequest(card);
+            if (card.t === "revisego-accept") return this._takeAccept(card);
+            if (card.t === "revisego-card") return this._refresh(card);
 
-            if (at !== -1) {
-                // Re-pasting a newer card is how a friend's stats update — there is
-                // no server to poll, so refreshing IS re-adding.
-                all[at] = card;
-                writeJSON(FRIENDS_KEY, all);
-                return { ok: true, message: card.name + "'s card updated.", updated: true };
+            return { ok: false, message: "That code isn't a friend code." };
+        },
+
+        _takeRequest: function (card) {
+            if (this.list().some(f => f.code === card.code)) {
+                return { ok: false, message: card.name + " is already your friend." };
+            }
+            const all = this.requests();
+            if (all.some(r => r.dir === "in" && r.code === card.code)) {
+                return { ok: false, message: "You already have a request from " + card.name + "." };
+            }
+            all.push(Object.assign({
+                id: "r" + Date.now().toString(36), dir: "in"
+            }, card));
+            writeJSON(REQUESTS_KEY, all);
+            Notify.push("friend_request", { name: card.name });
+            return { ok: true, message: card.name + " wants to be friends.", request: true };
+        },
+
+        _takeAccept: function (card) {
+            const all = this.requests();
+            // Clear the matching outgoing request, if the name lines up. It is only
+            // a label — there is no id to match on until they accept.
+            const rest = all.filter(r => !(r.dir === "out" &&
+                r.name.toLowerCase() === String(card.name).toLowerCase()));
+            writeJSON(REQUESTS_KEY, rest);
+
+            const friends = this.list();
+            const at = friends.findIndex(f => f.code === card.code);
+            const entry = Object.assign({ favourite: false }, card, { t: "revisego-card" });
+            if (at !== -1) friends[at] = Object.assign({}, friends[at], entry);
+            else friends.push(entry);
+            writeJSON(FRIENDS_KEY, friends);
+
+            Notify.push("friend_accepted", { name: card.name });
+            return { ok: true, message: card.name + " accepted. You're friends." };
+        },
+
+        _refresh: function (card) {
+            const friends = this.list();
+            const at = friends.findIndex(f => f.code === card.code);
+            if (at === -1) {
+                return { ok: false, message:
+                    card.name + " isn't your friend yet — ask them to send a request code." };
+            }
+            friends[at] = Object.assign({}, friends[at], card);
+            writeJSON(FRIENDS_KEY, friends);
+            return { ok: true, message: card.name + "'s stats updated.", updated: true };
+        },
+
+        /** Accept an incoming request. Returns the code to send back. */
+        accept: function (id) {
+            const all = this.requests();
+            const req = all.filter(r => r.id === id && r.dir === "in")[0];
+            if (!req) return { ok: false, message: "That request has gone." };
+
+            writeJSON(REQUESTS_KEY, all.filter(r => r.id !== id));
+
+            const friends = this.list();
+            if (!friends.some(f => f.code === req.code)) {
+                friends.push({
+                    t: "revisego-card", code: req.code, name: req.name,
+                    xp: req.xp, level: req.level, answered: req.answered,
+                    correct: req.correct, streak: req.streak,
+                    favourite: false, at: req.at
+                });
+                writeJSON(FRIENDS_KEY, friends);
             }
 
-            all.push(card);
-            writeJSON(FRIENDS_KEY, all);
-            return { ok: true, message: card.name + " added." };
+            const back = myProfileCard("revisego-accept");
+            return {
+                ok: true,
+                message: "You're friends with " + req.name + ".",
+                code: back ? encode(back) : "",
+                name: req.name
+            };
+        },
+
+        decline: function (id) {
+            writeJSON(REQUESTS_KEY, this.requests().filter(r => r.id !== id));
+        },
+
+        toggleFavourite: function (code) {
+            const friends = this.list();
+            const f = friends.filter(x => x.code === code)[0];
+            if (!f) return false;
+            f.favourite = !f.favourite;
+            writeJSON(FRIENDS_KEY, friends);
+            return f.favourite;
         },
 
         remove: function (code) {
             writeJSON(FRIENDS_KEY, this.list().filter(f => f.code !== code));
         },
 
-        // Me plus friends, sorted by XP. Everyone's numbers are as fresh as the
-        // last card they sent, and the UI says so rather than implying live data.
+        // Me plus friends. Favourites first, then XP — a starred friend is the one
+        // you care about beating, so burying them under a stranger defeats the star.
         leaderboard: function () {
             const me = Accounts.current();
             const rows = this.list().slice();
@@ -330,7 +532,9 @@
                     at: Date.now()
                 });
             }
-            return rows.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+            return rows.sort((a, b) =>
+                (b.favourite ? 1 : 0) - (a.favourite ? 1 : 0) ||
+                (b.xp || 0) - (a.xp || 0));
         }
     };
 
@@ -473,6 +677,17 @@
             }
 
             writeJSON(ROOMS_KEY, all);
+
+            // Someone else's result is worth surfacing on the bell — it is the one
+            // thing in a room that happens without you doing anything.
+            const me = Accounts.current();
+            if (window.Notify && (!me || r.name !== me.username)) {
+                Notify.push("room_result", {
+                    name: r.name,
+                    detail: r.score + "/" + r.total + " in " + target.name
+                });
+            }
+
             return { ok: true, message: r.name + " added to " + target.name + "." };
         },
 

@@ -2108,6 +2108,191 @@ body.gated { overflow: hidden; }
 
 
 /* =========================================================
+   FRIEND REQUESTS, FAVOURITES, NOTIFICATIONS
+========================================================= */
+
+.how-it-works {
+    counter-reset: step;
+    list-style: none;
+    display: grid;
+    gap: 9px;
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+    background: rgba(91, 123, 255, 0.06);
+    border: 1px solid rgba(91, 123, 255, 0.22);
+    border-radius: var(--r);
+}
+
+.how-it-works li {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    font-size: 0.9rem;
+    color: var(--text-soft);
+}
+
+.how-it-works li::before {
+    counter-increment: step;
+    content: counter(step);
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--primary-ink);
+    background: var(--primary);
+    border-radius: 50%;
+}
+
+.accept-box { border-color: var(--correct); }
+.accept-box > strong { display: block; margin-bottom: 9px; color: var(--correct); }
+
+.request-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 12px var(--space-3);
+    margin-bottom: 8px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--r);
+}
+
+.request-row.out { border-left-color: var(--muted); opacity: 0.8; }
+
+.request-tools { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+.board-tools { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; }
+
+.board-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    color: var(--muted);
+    border-radius: 50%;
+    transition: color var(--fast), background var(--fast);
+}
+
+.board-icon:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+.board-icon.on { color: var(--gold); }
+.board-icon.danger:hover { color: var(--wrong); background: rgba(255, 77, 109, 0.12); }
+
+.fav-mark { color: var(--gold); }
+.fav-mark .icon { width: 0.85em; height: 0.85em; display: inline-block; vertical-align: -1px; }
+
+/* The bell */
+.profile-button.bell { position: relative; }
+
+.notify-count {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    font-family: var(--font-display);
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 19px;
+    text-align: center;
+    color: #fff;
+    background: var(--wrong);
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px var(--bg);
+}
+
+.notify-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 13px var(--space-3);
+    margin-bottom: 8px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+}
+
+.notify-row.unread { border-left: 4px solid var(--primary); background: rgba(91, 123, 255, 0.06); }
+
+.notify-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    color: var(--primary);
+    background: rgba(91, 123, 255, 0.12);
+    border-radius: 11px;
+}
+
+.notify-row.unread .notify-icon { color: var(--primary); }
+
+
+/* =========================================================
+   FOCUS TIMER
+========================================================= */
+
+.focus-wrap { display: grid; justify-items: center; gap: var(--space-4); }
+
+.focus-ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: min(280px, 76vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary) calc(var(--pct, 0) * 1%),
+                               rgba(255, 255, 255, 0.07) 0);
+    transition: background 400ms linear;
+}
+
+.focus-ring.resting {
+    background: conic-gradient(var(--correct) calc(var(--pct, 0) * 1%),
+                               rgba(255, 255, 255, 0.07) 0);
+}
+
+.focus-inner {
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    width: calc(100% - 26px);
+    height: calc(100% - 26px);
+    background: var(--card);
+    border-radius: 50%;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.4);
+}
+
+.focus-phase {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+.focus-ring.resting .focus-phase { color: var(--correct); }
+
+.focus-time {
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 12vw, 3.6rem);
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.focus-round { font-size: 0.82rem; color: var(--muted); }
+
+.focus-buttons { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; }
+
+.focus-wrap .stat-grid { width: 100%; }
+
+
+/* =========================================================
    ROOM CARDS
 ========================================================= */
 

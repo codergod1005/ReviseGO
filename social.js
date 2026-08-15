@@ -142,10 +142,12 @@
         if (!window.Friends || !window.Accounts) return;
 
         const card = $("my-card");
-        if (card) card.value = Friends.myCard();
+        if (card) card.value = Friends.requestCode();
 
         const code = $("my-friend-code");
         if (code) code.textContent = Accounts.myCode() || "------";
+
+        renderRequests();
 
         const board = $("friends-board");
         if (!board) return;
@@ -153,33 +155,151 @@
         const rows = Friends.leaderboard();
 
         if (rows.length <= 1) {
-            board.innerHTML = '<div class="empty-note">No friends added yet. Send someone ' +
-                "your card and paste theirs back to compare.</div>";
-        } else {
-            board.innerHTML = rows.map((r, i) => {
-                const days = r.at ? Math.round((Date.now() - r.at) / 86400000) : 0;
-                const fresh = r.me ? "you"
-                    : days < 1 ? "updated today"
-                    : days === 1 ? "1 day old" : days + " days old";
-                return '<div class="board-row' + (r.me ? " me" : "") + '">' +
-                    '<span class="board-rank">' + (i + 1) + "</span>" +
-                    '<span class="board-name"><strong>' + esc(r.name) + "</strong>" +
-                        '<small>Level ' + (r.level || 1) + " · " + fresh + "</small></span>" +
-                    '<span class="board-xp">' + (r.xp || 0).toLocaleString() + " XP</span>" +
-                    (r.me ? "" :
-                        '<button class="board-remove" data-code="' + esc(r.code) +
-                        '" aria-label="Remove ' + esc(r.name) + '">' + icon("i-x") + "</button>") +
-                "</div>";
-            }).join("");
+            board.innerHTML = '<div class="empty-note">No friends yet. Send someone your ' +
+                "request code — they accept and send one back.</div>";
+            return;
+        }
 
-            board.querySelectorAll(".board-remove").forEach(b => {
-                b.addEventListener("click", () => {
-                    Friends.remove(b.dataset.code);
+        board.innerHTML = rows.map((r, i) => {
+            const days = r.at ? Math.round((Date.now() - r.at) / 86400000) : 0;
+            const fresh = r.me ? "you"
+                : days < 1 ? "updated today"
+                : days === 1 ? "1 day old" : days + " days old";
+            return '<div class="board-row' + (r.me ? " me" : "") + '">' +
+                '<span class="board-rank">' + (i + 1) + "</span>" +
+                '<span class="board-name"><strong>' + esc(r.name) +
+                    (r.favourite ? ' <span class="fav-mark" title="Favourite">' +
+                        icon("i-star", "icon-fill") + "</span>" : "") + "</strong>" +
+                    '<small>Level ' + (r.level || 1) + " · " + fresh + "</small></span>" +
+                '<span class="board-xp">' + (r.xp || 0).toLocaleString() + " XP</span>" +
+                (r.me ? "" :
+                    '<span class="board-tools">' +
+                        '<button class="board-icon' + (r.favourite ? " on" : "") +
+                            '" data-fav="' + esc(r.code) + '" aria-label="Favourite ' +
+                            esc(r.name) + '">' + icon("i-star", r.favourite ? "icon-fill" : "") + "</button>" +
+                        '<button class="board-icon" data-challenge="' + esc(r.name) +
+                            '" aria-label="Challenge ' + esc(r.name) + '">' + icon("i-bolt") + "</button>" +
+                        '<button class="board-icon danger" data-remove="' + esc(r.code) +
+                            '" aria-label="Remove ' + esc(r.name) + '">' + icon("i-x") + "</button>" +
+                    "</span>") +
+            "</div>";
+        }).join("");
+
+        board.querySelectorAll("[data-remove]").forEach(b => {
+            b.addEventListener("click", () => {
+                UI.confirm({
+                    title: "Remove this friend?",
+                    body: "They stay on your leaderboard until you both re-add each other.",
+                    confirm: "Remove",
+                    danger: true
+                }).then(yes => {
+                    if (!yes) return;
+                    Friends.remove(b.dataset.remove);
                     renderFriends();
                     refreshBadges();
                 });
             });
+        });
+
+        board.querySelectorAll("[data-fav]").forEach(b => {
+            b.addEventListener("click", () => {
+                const on = Friends.toggleFavourite(b.dataset.fav);
+                renderFriends();
+                UI.info(on ? "Pinned to the top of your leaderboard." : "Unpinned.");
+            });
+        });
+
+        // Challenging creates a room and hands you the code. Same seeded questions
+        // for both of you, which is the only way the comparison means anything.
+        board.querySelectorAll("[data-challenge]").forEach(b => {
+            b.addEventListener("click", () => {
+                const name = b.dataset.challenge;
+                const room = Rooms.create("You vs " + name, "");
+                Notify.push("challenge", { name: "You", room: room.code });
+                UI.note({
+                    title: "Room " + room.code + " created",
+                    body: "Send " + name + " that code. You both get the same ten questions, " +
+                          "then swap result codes to see who won."
+                });
+                refreshBadges();
+            });
+        });
+    }
+
+    function renderRequests() {
+        const host = $("friend-requests");
+        if (!host || !window.Friends) return;
+
+        const incoming = Friends.incoming();
+        const outgoing = Friends.outgoing();
+
+        if (!incoming.length && !outgoing.length) {
+            host.innerHTML = "";
+            return;
         }
+
+        host.innerHTML =
+            '<div class="section-heading"><div><p class="small-heading">Requests</p>' +
+            "<h2>Waiting on you</h2></div></div>" +
+
+            incoming.map(r =>
+                '<div class="request-row">' +
+                    '<span class="board-name"><strong>' + esc(r.name) + "</strong>" +
+                        "<small>wants to be friends · level " + (r.level || 1) + "</small></span>" +
+                    '<span class="request-tools">' +
+                        '<button class="secondary-button small" data-accept="' + r.id +
+                            '">Accept</button>' +
+                        '<button class="board-icon danger" data-decline="' + r.id +
+                            '" aria-label="Decline ' + esc(r.name) + '">' + icon("i-x") + "</button>" +
+                    "</span>" +
+                "</div>").join("") +
+
+            outgoing.map(r =>
+                '<div class="request-row out">' +
+                    '<span class="board-name"><strong>' + esc(r.name) + "</strong>" +
+                        "<small>request sent — waiting for their accept code</small></span>" +
+                    '<button class="board-icon danger" data-cancel="' + r.id +
+                        '" aria-label="Cancel request">' + icon("i-x") + "</button>" +
+                "</div>").join("");
+
+        host.querySelectorAll("[data-accept]").forEach(b => {
+            b.addEventListener("click", () => {
+                const result = Friends.accept(b.dataset.accept);
+                if (!result.ok) { UI.bad(result.message); return; }
+                renderFriends();
+                refreshBadges();
+                // Accepting is only half the handshake: they still need this code
+                // back, or the link stays one-way. So it is put in front of them
+                // rather than mentioned in a toast that disappears.
+                showAcceptCode(result.name, result.code);
+            });
+        });
+
+        host.querySelectorAll("[data-decline]").forEach(b => {
+            b.addEventListener("click", () => {
+                Friends.decline(b.dataset.decline);
+                renderFriends();
+                refreshBadges();
+                UI.info("Request declined.");
+            });
+        });
+
+        host.querySelectorAll("[data-cancel]").forEach(b => {
+            b.addEventListener("click", () => {
+                Friends.decline(b.dataset.cancel);
+                renderFriends();
+                UI.info("Request cancelled.");
+            });
+        });
+    }
+
+    function showAcceptCode(name, code) {
+        const box = $("accept-code-box");
+        if (!box) return;
+        box.hidden = false;
+        box.querySelector("strong").textContent = "Send this back to " + name;
+        box.querySelector("textarea").value = code;
+        box.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     function wireFriends() {
@@ -204,7 +324,7 @@
         if (add) {
             add.addEventListener("click", function () {
                 const note = $("friend-note");
-                const result = Friends.add($("friend-card").value);
+                const result = Friends.receive($("friend-card").value);
                 note.textContent = result.message;
                 note.className = "code-note " + (result.ok ? "ok" : "bad");
                 if (result.ok) {
@@ -217,7 +337,92 @@
                 }
             });
         }
+
+        // "I've sent it" records the outgoing request so it shows as pending,
+        // rather than the user having to remember who they messaged.
+        const sent = $("mark-sent");
+        if (sent) {
+            sent.addEventListener("click", function () {
+                UI.prompt({
+                    title: "Who did you send it to?",
+                    label: "Their name",
+                    placeholder: "e.g. Daniel",
+                    maxlength: 20,
+                    confirm: "Mark as sent"
+                }).then(name => {
+                    if (!name) return;
+                    Friends.markSent(name);
+                    renderFriends();
+                    UI.ok("Waiting on " + name + " to accept.");
+                });
+            });
+        }
+
+        const copyAccept = $("copy-accept");
+        if (copyAccept) {
+            copyAccept.addEventListener("click", function () {
+                const ta = $("accept-code-box").querySelector("textarea");
+                ta.select();
+                try { document.execCommand("copy"); } catch (e) {}
+                if (navigator.clipboard) navigator.clipboard.writeText(ta.value).catch(() => {});
+                UI.ok("Copied. Send it back to them.");
+            });
+        }
     }
+
+
+    /* =====================================================
+       NOTIFICATIONS — the bell
+    ===================================================== */
+
+    function renderBell() {
+        const bell = $("notify-bell");
+        const dot = $("notify-count");
+        if (!bell || !window.Notify) return;
+
+        const n = Notify.unread();
+        if (dot) {
+            dot.textContent = n > 9 ? "9+" : String(n);
+            dot.hidden = n === 0;
+        }
+        bell.setAttribute("aria-label",
+            n ? n + " unread notification" + (n === 1 ? "" : "s") : "Notifications");
+    }
+
+    function renderNotifications() {
+        const host = $("notify-list");
+        if (!host || !window.Notify) return;
+
+        const all = Notify.list();
+
+        if (!all.length) {
+            host.innerHTML = '<div class="empty-note">Nothing yet. Friend requests, ' +
+                "challenges and room results turn up here.</div>";
+            return;
+        }
+
+        host.innerHTML = all.map(n => {
+            const mins = Math.round((Date.now() - n.at) / 60000);
+            const when = mins < 1 ? "just now"
+                : mins < 60 ? mins + " min ago"
+                : mins < 1440 ? Math.round(mins / 60) + "h ago"
+                : Math.round(mins / 1440) + "d ago";
+            return '<div class="notify-row' + (n.read ? "" : " unread") + '">' +
+                '<span class="notify-icon">' + icon(Notify.iconFor(n)) + "</span>" +
+                '<span class="board-name"><strong>' + esc(Notify.describe(n)) + "</strong>" +
+                    "<small>" + when + "</small></span>" +
+            "</div>";
+        }).join("");
+    }
+
+    window.openNotifications = function () {
+        renderNotifications();
+        showScreen("notify-screen");
+        // Marked read on OPEN, not on render, so the count clears when they have
+        // actually been looked at.
+        Notify.markAllRead();
+        setTimeout(renderBell, 400);
+    };
 
 
     /* =====================================================
@@ -401,6 +606,7 @@
             r.textContent = n ? " · " + n : "";
             r.style.color = "var(--primary)";
         }
+        renderBell();
     }
 
     const _showScreen = window.showScreen;
@@ -408,17 +614,44 @@
         const out = _showScreen.apply(this, arguments);
         if (id === "friends-screen") renderFriends();
         if (id === "rooms-screen") renderRooms();
-        if (id === "home-screen") refreshBadges();
+        if (id === "notify-screen") renderNotifications();
+        if (id === "home-screen") { refreshBadges(); renderBell(); }
         return out;
     };
 
+    function wireNotifications() {
+        const clear = $("clear-notifications");
+        if (!clear) return;
+        clear.addEventListener("click", function () {
+            UI.confirm({
+                title: "Clear all notifications?",
+                confirm: "Clear"
+            }).then(yes => {
+                if (!yes) return;
+                Notify.clear();
+                renderNotifications();
+                renderBell();
+            });
+        });
+    }
+
+    // Same guard as focus.js: these wire* functions call addEventListener, so a
+    // second init would double every handler — one click on "Add friend" would
+    // run the whole thing twice.
+    let started = false;
+
     function init() {
+        if (started) return;
+        started = true;
+
         wireAuth();
         wireFriends();
         wireRooms();
+        wireNotifications();
         setMode("signin");
         refreshGate();
         refreshBadges();
+        renderBell();
     }
 
     if (document.readyState === "loading") {
