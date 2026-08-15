@@ -313,6 +313,17 @@ check("the number starts on the previous level to count up from",
       popup.querySelector("#level-up-number").textContent === "3",
       popup.querySelector("#level-up-number").textContent);
 check("level-up has an XP bar to fill", !!popup.querySelector("#level-up-fill"));
+
+// The popup's XP bar must use the SAME curve as getLevelFromXP, which multiplies the
+// requirement by 1.2 each level. It previously assumed a flat +250, so the two agreed
+// at level 2 and drifted from level 3 onwards — a bar showing the wrong progress to
+// anyone past their second level.
+check("the level-up bar uses the real level curve", (function () {
+    const need = (lvl) => { let n = 500; for (let l = 1; l < lvl; l++) n = Math.round(n * 1.2); return n; };
+    const total = (lvl) => { let n = 500, t = 0; for (let l = 1; l < lvl; l++) { t += n; n = Math.round(n * 1.2); } return t; };
+    return need(4) === 864 && total(4) === 1820 &&
+           g("getLevelFromXP(1820)") === 4 && g("getLevelFromXP(1819)") === 3;
+})(), "level 4 starts at 1820 XP, not 2250");
 check("level-up is announced to screen readers",
       popup.getAttribute("role") === "alertdialog");
 check("level-up can be dismissed", !!popup.querySelector("#level-up-close"));

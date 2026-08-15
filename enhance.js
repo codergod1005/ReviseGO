@@ -731,10 +731,13 @@
     ===================================================== */
 
     function levelBounds(level) {
-        // Mirrors getLevelFromXP in app.js: 500 XP for level 2, then +250 each
-        // time. Derived rather than duplicated so the two cannot drift apart.
+        // MUST match getLevelFromXP in app.js exactly, which multiplies the
+        // requirement by 1.2 each level — it is NOT a flat +250, which is what
+        // this used to assume. The two agreed at level 2 and drifted from level 3
+        // on, so the level-up bar quietly showed the wrong progress for anyone
+        // past their second level. Found by comparing the curves side by side.
         let need = 500, total = 0;
-        for (let l = 1; l < level; l++) { total += need; need += 250; }
+        for (let l = 1; l < level; l++) { total += need; need = Math.round(need * 1.2); }
         return { start: total, need: need };
     }
 
