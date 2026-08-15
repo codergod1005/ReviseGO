@@ -45,6 +45,25 @@
             <circle cx="12" cy="7" r="4"/>
         </symbol>
 
+        <symbol id="i-users" viewBox="0 0 24 24">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            <circle cx="9" cy="7" r="4"/>
+        </symbol>
+
+        <symbol id="i-door" viewBox="0 0 24 24">
+            <path d="M13 4h3a2 2 0 0 1 2 2v14M2 20h20M15 11v.01"/>
+            <path d="M11 2 6 4v16l5 2V2z"/>
+        </symbol>
+
+        <symbol id="i-logout" viewBox="0 0 24 24">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+        </symbol>
+
+        <symbol id="i-copy" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </symbol>
+
         <symbol id="i-bolt" viewBox="0 0 24 24">
             <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
         </symbol>
@@ -133,6 +152,62 @@
 </svg>
 
 
+<!-- =====================================================
+     SIGN IN GATE
+     Covers the app until someone signs in. The honesty line is not
+     small print: this is a "who is playing" gate, not a lock on
+     private data, and saying so is the difference between a friendly
+     save-slot and a lie about security.
+===================================================== -->
+
+<div id="auth-gate" class="auth-gate" hidden>
+
+    <div class="auth-card">
+
+        <div class="auth-logo">
+            <span>Revise</span><strong>Go</strong>
+        </div>
+
+        <p class="auth-tagline">Revision, but actually fun.</p>
+
+        <div class="auth-tabs" role="tablist">
+            <button class="auth-tab on" id="tab-signin" role="tab" aria-selected="true">Sign in</button>
+            <button class="auth-tab" id="tab-signup" role="tab" aria-selected="false">Create account</button>
+        </div>
+
+        <form id="auth-form" autocomplete="on">
+
+            <label for="auth-username">Username</label>
+            <input id="auth-username" name="username" type="text" autocomplete="username"
+                   spellcheck="false" maxlength="16" placeholder="e.g. ola_revises" required>
+
+            <label for="auth-password">Password</label>
+            <input id="auth-password" name="password" type="password"
+                   autocomplete="current-password" minlength="6"
+                   placeholder="At least 6 characters" required>
+
+            <p class="auth-error" id="auth-error" role="alert"></p>
+
+            <button type="submit" class="main-button auth-submit" id="auth-submit">
+                Sign in
+            </button>
+
+        </form>
+
+        <p class="auth-note">
+            <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
+            <span>
+                <b>This account lives on this device only.</b> There is no server, so your
+                password can't be recovered and it doesn't protect anything from someone
+                using this computer. It keeps your XP separate from other players here.
+            </span>
+        </p>
+
+    </div>
+
+</div>
+
+
 <header class="top-bar">
 
     <div class="logo">
@@ -157,7 +232,11 @@
 
         <button class="profile-button" onclick="openProfile()">
             <svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>
-            Profile
+            <span id="topbar-username">Profile</span>
+        </button>
+
+        <button class="profile-button icon-only" id="sign-out" aria-label="Sign out" hidden>
+            <svg class="icon" aria-hidden="true"><use href="#i-logout"/></svg>
         </button>
 
     </div>
@@ -355,6 +434,60 @@
                 <span class="game-tag">Progress</span>
                 <h3>My Progress</h3>
                 <p>See which subjects and topics you're strong on, and which need work.</p>
+            </div>
+
+            <span class="play-arrow">
+                <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+            </span>
+
+        </button>
+
+
+    </div>
+
+
+    <!-- SOCIAL -->
+
+    <div class="section-heading">
+        <div>
+            <p class="small-heading">Together</p>
+            <h2>Revise with other people</h2>
+        </div>
+    </div>
+
+
+    <div class="game-grid">
+
+
+        <button class="game-card" onclick="openFriends()">
+
+            <div class="game-icon">
+                <svg class="icon" aria-hidden="true"><use href="#i-users"/></svg>
+            </div>
+
+            <div class="game-info">
+                <span class="game-tag">Friends</span>
+                <h3>Friends <span id="friend-count-badge"></span></h3>
+                <p>Swap player cards and see who's actually putting the hours in.</p>
+            </div>
+
+            <span class="play-arrow">
+                <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+            </span>
+
+        </button>
+
+
+        <button class="game-card" onclick="openRooms()">
+
+            <div class="game-icon">
+                <svg class="icon" aria-hidden="true"><use href="#i-door"/></svg>
+            </div>
+
+            <div class="game-info">
+                <span class="game-tag">Study room</span>
+                <h3>Study Rooms <span id="room-count-badge"></span></h3>
+                <p>One code, same ten questions for everyone. Settle it properly.</p>
             </div>
 
             <span class="play-arrow">
@@ -598,6 +731,113 @@
 
     </div>
 
+
+</section>
+
+
+<!-- =====================================================
+     FRIENDS
+===================================================== -->
+
+<section id="friends-screen" class="screen">
+
+    <button class="back-button" onclick="showScreen('home-screen')">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+        Back to Arcade
+    </button>
+
+    <div class="page-title">
+        <p class="small-heading">Friends</p>
+        <h1>Compare your revision</h1>
+        <p>
+            There's no server, so friends swap <b>player cards</b> instead of adding each other
+            live. Send yours, paste theirs, and the table below fills up.
+        </p>
+    </div>
+
+    <div class="share-box">
+        <label for="my-card">Your player card — send this to a friend</label>
+        <textarea id="my-card" readonly rows="3"></textarea>
+        <div class="share-row">
+            <button class="secondary-button" id="copy-card">Copy my card</button>
+            <span class="share-code">Friend code: <strong id="my-friend-code">------</strong></span>
+        </div>
+    </div>
+
+    <div class="share-box">
+        <label for="friend-card">Paste a friend's card</label>
+        <textarea id="friend-card" rows="3" placeholder="Paste the code they sent you"></textarea>
+        <div class="share-row">
+            <button class="main-button" id="add-friend">Add friend</button>
+        </div>
+        <p class="code-note" id="friend-note"></p>
+    </div>
+
+    <div class="section-heading">
+        <div>
+            <p class="small-heading">Leaderboard</p>
+            <h2>You and your friends</h2>
+            <p class="players-note">
+                Friends' numbers are from the last card they sent you, not live.
+            </p>
+        </div>
+    </div>
+
+    <div id="friends-board"></div>
+
+</section>
+
+
+<!-- =====================================================
+     STUDY ROOMS
+===================================================== -->
+
+<section id="rooms-screen" class="screen">
+
+    <button class="back-button" onclick="showScreen('home-screen')">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-left"/></svg>
+        Back to Arcade
+    </button>
+
+    <div class="page-title">
+        <p class="small-heading">Study rooms</p>
+        <h1>Same questions, everyone</h1>
+        <p>
+            A room code decides the questions, so everyone who joins gets exactly the same ten
+            in the same order. Play it, then swap result codes to build the table.
+        </p>
+    </div>
+
+    <div class="room-actions">
+
+        <div class="share-box">
+            <label for="room-name">Start a room</label>
+            <input id="room-name" type="text" maxlength="30" placeholder="e.g. Maths before the test">
+            <div class="share-row">
+                <button class="main-button" id="create-room">Create room</button>
+            </div>
+        </div>
+
+        <div class="share-box">
+            <label for="join-code">Join with a code</label>
+            <input id="join-code" type="text" maxlength="6" spellcheck="false"
+                   placeholder="ABC234" style="text-transform:uppercase">
+            <div class="share-row">
+                <button class="secondary-button" id="join-room">Join room</button>
+            </div>
+            <p class="code-note" id="room-note"></p>
+        </div>
+
+    </div>
+
+    <div class="section-heading">
+        <div>
+            <p class="small-heading">Your rooms</p>
+            <h2>Rooms you're in</h2>
+        </div>
+    </div>
+
+    <div id="room-list"></div>
 
 </section>
 
@@ -1159,6 +1399,9 @@
 <script src="enhance.js"></script>
 <!-- After enhance.js: the modes reuse its mistake recorder and stats. -->
 <script src="modes.js"></script>
+<!-- accounts.js before social.js: the UI wires up what the logic exposes. -->
+<script src="accounts.js"></script>
+<script src="social.js"></script>
 
 
 </body>

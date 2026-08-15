@@ -11,6 +11,8 @@ profile.js        player profiles, premium and game unlocks — LOADS FIRST
 app.js            Quick Battle — questions, scoring, lives, XP, levels, achievements
 enhance.js        review, progress, charts, profile, level-up, XP bonuses (wraps app.js)
 modes.js          Speed Run and Boss Battle — their own loop, shared recorder
+accounts.js       sign-in, PBKDF2 hashing, friends and room logic
+social.js         the UI for the auth gate, friends and rooms
 data/questions.js the question bank
 tests/smoke.js    plays a full game headlessly and checks nothing broke
 ```
@@ -38,12 +40,20 @@ failures that otherwise show up as a silently blank patch of screen.
 
 ## Design
 
-The theme is an arcade cabinet: deep ink, **electric cyan** for anything you press, **coin gold**
-for score and levels, **coral** for streaks.
+Neutral near-black, **electric indigo-blue** for anything you press, **amber** for score and
+levels, warm **orange** for streaks.
 
-One rule shapes the whole palette: **green and red belong to answers.** In a quiz, green means
-"right" and red means "wrong", so neither can also be the brand colour without feedback losing
-its meaning. That is why cyan leads even though the obvious arcade choice is neon red.
+Two rules shape the whole palette:
+
+1. **Green and red belong to answers.** Green means "right", red means "wrong", so neither can
+   also be the brand colour without feedback losing its meaning.
+2. **The brand has to be cool**, so warm red stays unambiguous for a wrong answer. An orange or
+   magenta brand would sit right next to it. That rules out most of the obvious arcade choices,
+   which is why a blue leads.
+
+Green and red measure only ΔE 6.8 apart under deuteranopia — below the safe floor. They are kept
+because **neither ever appears alone**: a revealed answer carries a tick or a cross as well as a
+colour. Remove those glyphs and right/wrong stops being legible for roughly 1 in 12 boys.
 
 All colour is defined as custom properties in `:root` in `style.css`. Change it there and it
 changes everywhere; there is no raw hex anywhere else in the stylesheet.
@@ -72,24 +82,54 @@ Hand-rolled inline SVG in `enhance.js` — a charting library would be a bigger 
 entire app.
 
 Both charts are **single series** deliberately. That lets each use one strong hue with no legend
-(the caption names it) and avoids the one real colour hazard in this theme: the green and gold
-sit only ΔE 6.6 apart under protanopia, so they must never be adjacent categories in the same
-chart. Two charts, one series each, no such pair. Every chart has a `View as table` fallback and
-an `aria-label`.
+(the caption names it), and it sidesteps the palette's one real hazard — the correct/wrong pair
+at ΔE 6.8 under deuteranopia — by never putting two categories in one chart at all. The activity
+bars are blue, the accuracy line is amber, and they live in separate figures.
 
-## Players ("accounts")
+Every chart has a `View as table` fallback and an `aria-label`.
 
-These are **local save slots, not sign-in.** No server, no password, nothing synced. Two people
-can share a laptop and keep separate XP, levels and review lists; the same person on a different
-device starts from scratch. The UI says "on this device" for that reason, and there is no
-password box — a password field that protects nothing teaches people their password is safe
-when it isn't.
+## Accounts, and what the password actually does
 
-Real accounts need a backend to store the data and verify who you are. When you add one,
-`profile.js` is the only file that needs to change.
+There is a username and password, and the app is gated behind it. **It is not real security,
+and the sign-in screen says so in plain words.**
 
-The first profile deliberately keeps the original un-suffixed storage keys, so anyone who was
-already playing keeps the XP they earned instead of being reset to level 1 by the update.
+There is no server. Everything lives in this browser, so anyone who can open devtools here can
+read the accounts and delete them. The sign-in is a *"who is playing"* gate — the thing that
+stops your brother opening your XP — not a lock on private data. It cannot be, without a
+backend.
+
+What it does do properly, because doing it badly would be worse than not doing it:
+
+- **Passwords are never stored.** Only a PBKDF2-SHA256 hash, 210,000 iterations, with a random
+  16-byte salt per account. A test asserts the plaintext appears nowhere in storage.
+- **Wrong username and wrong password give the identical message.** Different messages are a way
+  to find out which usernames exist.
+- **Changing a password re-salts**, so the stored hash changes.
+
+Why hash at all if it isn't secure? Because people reuse passwords. Storing `hunter2` in plain
+text would hand over a password that probably opens something that matters. Hashing costs
+nothing and removes that.
+
+Each account gets its own save slot via `profile.js`. The first profile keeps the original
+un-suffixed storage keys, so anyone already playing keeps the XP they earned.
+
+## Friends and study rooms, without a server
+
+You cannot look someone up if there is nothing to look them up in. So both features work by
+**exchanging codes**, which is the honest version of multiplayer with no backend. Nothing here
+pretends a friend is online.
+
+**Friends** — you each have a *player card*: one copyable blob holding your name, level, XP and
+streak. Send yours, paste theirs, and the leaderboard fills. Re-pasting a newer card is how a
+friend's numbers update, and the UI labels how old each row is rather than implying live data.
+
+**Study rooms** — a room code *seeds the question order*, so everyone who joins that code gets
+exactly the same ten questions in the same order. That is what makes the scores comparable. You
+play, get a result code, and paste each other's in. A worse re-submission never overwrites a
+better one.
+
+The seeding uses xorshift32 rather than `Math.random()`, because the whole requirement is that
+two different devices produce the identical order — and `Math.random()` cannot be reproduced.
 
 ## Premium
 

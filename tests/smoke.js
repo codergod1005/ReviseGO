@@ -28,11 +28,23 @@ const dom = new JSDOM(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), {
 
 const { window } = dom;
 
+// jsdom ships no WebCrypto SubtleCrypto, which every real browser has and which
+// accounts.js needs for PBKDF2. Lending it Node's is the accurate simulation —
+// without it the harness would be testing the "no crypto" refusal path instead
+// of the real one.
+if (!window.crypto || !window.crypto.subtle) {
+    Object.defineProperty(window, "crypto", {
+        value: require("crypto").webcrypto,
+        configurable: true
+    });
+}
+if (typeof window.TextEncoder === "undefined") window.TextEncoder = TextEncoder;
+
 // jsdom does not fetch <script src>, so inject the file contents as REAL script
 // elements. window.eval() would run them in a function scope, where app.js's
 // top-level `const questions` never becomes a global — which is a property of
 // the harness, not of the page.
-for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js"]) {
+for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js"]) {
     const el = window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     try {
@@ -70,12 +82,21 @@ check("every icon reference resolves", missingIcons.size === 0,
       missingIcons.size ? "missing: " + [...missingIcons].join(", ") : `${symbolIds.size} symbols`);
 
 // Every getElementById in the JS must find something, or a feature is dead.
-const jsSrc = ["app.js", "enhance.js", "modes.js", "profile.js"]
+const jsSrc = ["app.js", "enhance.js", "modes.js", "profile.js", "accounts.js", "social.js"]
     .map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n");
 const wantedIds = [...jsSrc.matchAll(/getElementById\(\s*["'`]([\w-]+)["'`]/g)].map(m => m[1]);
 const missingIds = [...new Set(wantedIds)].filter(id => !$(id));
 check("every getElementById target exists", missingIds.length === 0,
       missingIds.length ? "missing: " + missingIds.join(", ") : `${new Set(wantedIds).size} ids`);
+
+// Every inline onclick must resolve to a real function. A typo here is a button
+// that looks fine and does nothing, which no amount of styling will reveal.
+const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const handlers = [...html.matchAll(/onclick="(\w+)\(/g)].map(m => m[1]);
+const deadHandlers = [...new Set(handlers)].filter(fn => typeof window[fn] !== "function");
+check("every onclick handler exists", deadHandlers.length === 0,
+      deadHandlers.length ? "missing: " + deadHandlers.join(", ")
+                          : new Set(handlers).size + " handlers");
 
 // ---- no purple anywhere ----------------------------------------------------
 const css = fs.readFileSync(path.join(ROOT, "style.css"), "utf8");
@@ -192,7 +213,7 @@ const dom2 = new JSDOM(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), {
     virtualConsole: vc, pretendToBeVisual: true,
 });
 Object.keys(store).forEach(k => dom2.window.localStorage.setItem(k, store[k]));
-for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js"]) {
+for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js"]) {
     const el = dom2.window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     dom2.window.document.body.appendChild(el);
@@ -414,6 +435,143 @@ check("profile shows how long you've played",
 check("export and import controls exist",
       !!$("export-save") && !!$("import-save") && !!$("import-file"));
 
+// ---- accounts, friends and rooms (async: PBKDF2 is async) -------------------
+(async function socialTests() {
+
+    const A = window.Accounts;
+
+    check("the app starts behind a sign-in gate", !$("auth-gate").hidden);
+    check("the page behind the gate is inert, not merely hidden",
+          window.document.querySelector("main").hasAttribute("inert"),
+          "a covered page that still takes Tab focus is still playable");
+
+    // Sign-up validation
+    check("a short username is rejected", (await A.signUp("ab", "password1")).ok === false);
+    check("a username with spaces is rejected",
+          (await A.signUp("bad name", "password1")).ok === false);
+    check("a short password is rejected", (await A.signUp("olarevises", "123")).ok === false);
+
+    const made = await A.signUp("ola_revises", "arcade2026");
+    check("an account can be created", made.ok === true, made.message || "");
+    check("signing up signs you in", A.isSignedIn() === true);
+    check("a friend code is issued", /^[A-Z2-9]{6}$/.test(A.myCode()), A.myCode());
+
+    // THE POINT OF HASHING: the password itself must not be anywhere in storage.
+    const rawAccounts = window.localStorage.getItem("reviseGoAccounts");
+    check("the password is never stored", rawAccounts.indexOf("arcade2026") === -1,
+          "storage holds only the hash");
+    check("a per-account salt is stored", /"salt":"[0-9a-f]{32}"/.test(rawAccounts));
+    check("the stored hash is PBKDF2-length", /"hash":"[0-9a-f]{64}"/.test(rawAccounts));
+
+    check("a duplicate username is refused",
+          (await A.signUp("OLA_REVISES", "another1")).ok === false,
+          "case-insensitive");
+
+    // Sign in / out
+    A.signOut();
+    check("signing out clears the session", A.isSignedIn() === false);
+    check("a wrong password is refused", (await A.signIn("ola_revises", "wrong")).ok === false);
+    check("an unknown user gives the SAME message as a wrong password",
+          (await A.signIn("nobody", "whatever")).message ===
+          (await A.signIn("ola_revises", "wrong")).message,
+          "different messages would leak which usernames exist");
+    check("the right password signs in", (await A.signIn("ola_revises", "arcade2026")).ok === true);
+
+    // Changing a password re-salts, so the stored hash must change.
+    const hashBefore = JSON.parse(window.localStorage.getItem("reviseGoAccounts"))[0].hash;
+    check("the old password is required to change it",
+          (await A.changePassword("wrong", "newpass1")).ok === false);
+    check("the password can be changed",
+          (await A.changePassword("arcade2026", "newpass1")).ok === true);
+    const hashAfter = JSON.parse(window.localStorage.getItem("reviseGoAccounts"))[0].hash;
+    check("changing the password changes the stored hash", hashBefore !== hashAfter);
+    check("the new password works", (await A.signIn("ola_revises", "newpass1")).ok === true);
+
+    // ---- friends ------------------------------------------------------------
+    const F = window.Friends;
+    const myCard = F.myCard();
+    check("a player card is produced", myCard.length > 20);
+    check("your own card is refused", F.add(myCard).ok === false,
+          F.add(myCard).message);
+    check("junk is refused as a card", F.add("not-a-card").ok === false);
+
+    // A friend's card, built the way a second device would produce one.
+    const friendCard = window.btoa(unescape(encodeURIComponent(JSON.stringify({
+        t: "revisego-card", code: "ZZZ234", name: "Daniel",
+        xp: 99999, level: 9, answered: 400, correct: 380, streak: 5, at: Date.now()
+    }))));
+    check("a friend's card is accepted", F.add(friendCard).ok === true);
+    check("the friend is stored", F.list().length === 1, F.list().length + " friends");
+
+    const updated = F.add(friendCard);
+    check("re-pasting a card updates rather than duplicating",
+          updated.updated === true && F.list().length === 1);
+
+    const board = F.leaderboard();
+    check("the leaderboard includes you and your friends", board.length === 2);
+    check("the leaderboard is sorted by XP", board[0].xp >= board[1].xp,
+          board.map(r => r.name + ":" + r.xp).join(", "));
+
+    window.openFriends();
+    check("friends screen opens", $("friends-screen").classList.contains("active"));
+    check("friends board renders rows",
+          $("friends-board").querySelectorAll(".board-row").length === 2);
+    check("your own row is marked", !!$("friends-board").querySelector(".board-row.me"));
+
+    F.remove("ZZZ234");
+    check("a friend can be removed", F.list().length === 0);
+
+    // ---- study rooms --------------------------------------------------------
+    const R = window.Rooms;
+    const room = R.create("Maths before the test", "Maths");
+    check("a room can be created", /^[A-Z2-9]{6}$/.test(room.code), room.code);
+    check("a bad room code is refused", R.join("XY").ok === false);
+    check("joining a code you were given creates it locally",
+          R.join("ABC234").ok === true);
+
+    // THE WHOLE POINT: the same code must give the same questions on every device.
+    const setA = R.questionsFor("ABC234", "Maths").map(q => q.id).join(",");
+    const setB = R.questionsFor("ABC234", "Maths").map(q => q.id).join(",");
+    const setC = R.questionsFor("ZZZ999", "Maths").map(q => q.id).join(",");
+    check("a room code always produces the same questions", setA === setB,
+          setA.slice(0, 40) + "...");
+    check("a different code produces different questions", setA !== setC);
+    check("a room round is 10 questions", R.questionsFor("ABC234", "Maths").length === 10);
+
+    const resultCode = R.resultCode("ABC234", 7, 10);
+    check("a result code is produced", resultCode.length > 20);
+    check("submitting a result adds it to the room", R.submit(resultCode).ok === true);
+    check("the room now has a result", R.get("ABC234").results.length === 1);
+
+    // A worse re-submission must not knock someone down their own table.
+    R.submit(R.resultCode("ABC234", 3, 10));
+    check("a worse result does not overwrite a better one",
+          R.get("ABC234").results[0].score === 7,
+          "score stayed " + R.get("ABC234").results[0].score);
+
+    check("a result for a room you're not in is refused",
+          R.submit(window.btoa(unescape(encodeURIComponent(JSON.stringify({
+              t: "revisego-result", room: "NOPE22", name: "X", score: 1, total: 10
+          }))))).ok === false);
+
+    window.openRooms();
+    check("rooms screen opens", $("rooms-screen").classList.contains("active"));
+    check("rooms are listed", $("room-list").querySelectorAll(".room-card").length === 2,
+          $("room-list").querySelectorAll(".room-card").length + " rooms");
+
+    R.leave("ABC234");
+    check("a room can be left", R.list().length === 1);
+
+    // ---- the gate lets you through once signed in ---------------------------
+    window.refreshAuthGate();
+    check("the gate is down once signed in", $("auth-gate").hidden === true);
+    check("the page is interactive again",
+          !window.document.querySelector("main").hasAttribute("inert"));
+
+    report();
+})();
+
+function report() {
 // ---- report ----------------------------------------------------------------
 let failed = 0;
 for (const r of results) {
@@ -426,3 +584,4 @@ if (errors.length) {
 }
 console.log(`\n${results.length - failed}/${results.length} checks passed`);
 process.exit(failed || errors.length ? 1 : 0);
+}
