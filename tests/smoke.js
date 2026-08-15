@@ -44,7 +44,7 @@ if (typeof window.TextEncoder === "undefined") window.TextEncoder = TextEncoder;
 // elements. window.eval() would run them in a function scope, where app.js's
 // top-level `const questions` never becomes a global — which is a property of
 // the harness, not of the page.
-for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js"]) {
+for (const f of ["ui.js", "profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js"]) {
     const el = window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     try {
@@ -62,6 +62,16 @@ const results = [];
 function check(name, condition, detail) {
     results.push({ name, pass: !!condition, detail: detail || "" });
 }
+
+// If an await never settles, Node exits when the event loop empties — silently,
+// with no output at all, which looks exactly like a passing run. This prints
+// where it got to instead.
+let reported = false;
+process.on("exit", () => {
+    if (reported) return;
+    console.log("\nHARNESS STALLED after " + results.length + " checks.");
+    console.log("Last check: " + (results.length ? results[results.length - 1].name : "none"));
+});
 
 // ---- structure -------------------------------------------------------------
 check("questions loaded", g("typeof questions !== 'undefined' && questions.length > 0"),
@@ -82,7 +92,7 @@ check("every icon reference resolves", missingIcons.size === 0,
       missingIcons.size ? "missing: " + [...missingIcons].join(", ") : `${symbolIds.size} symbols`);
 
 // Every getElementById in the JS must find something, or a feature is dead.
-const jsSrc = ["app.js", "enhance.js", "modes.js", "profile.js", "accounts.js", "social.js"]
+const jsSrc = ["app.js", "enhance.js", "modes.js", "profile.js", "accounts.js", "social.js", "ui.js"]
     .map(f => fs.readFileSync(path.join(ROOT, f), "utf8")).join("\n");
 const wantedIds = [...jsSrc.matchAll(/getElementById\(\s*["'`]([\w-]+)["'`]/g)].map(m => m[1]);
 const missingIds = [...new Set(wantedIds)].filter(id => !$(id));
@@ -213,7 +223,7 @@ const dom2 = new JSDOM(fs.readFileSync(path.join(ROOT, "index.html"), "utf8"), {
     virtualConsole: vc, pretendToBeVisual: true,
 });
 Object.keys(store).forEach(k => dom2.window.localStorage.setItem(k, store[k]));
-for (const f of ["profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js"]) {
+for (const f of ["ui.js", "profile.js", "data/questions.js", "app.js", "enhance.js", "modes.js", "accounts.js", "social.js"]) {
     const el = dom2.window.document.createElement("script");
     el.textContent = fs.readFileSync(path.join(ROOT, f), "utf8");
     dom2.window.document.body.appendChild(el);
@@ -562,6 +572,93 @@ check("export and import controls exist",
     R.leave("ABC234");
     check("a room can be left", R.list().length === 1);
 
+    // ---- no browser popups anywhere -----------------------------------------
+    // alert/confirm/prompt are styled by the OS so they look like a security
+    // warning, they freeze the page including a Speed Run countdown, and mobile
+    // browsers can suppress them entirely — which means an "are you sure?" the
+    // user never sees.
+    const POPUP = /(^|[^.\w])(alert|confirm|prompt)\s*\(/;
+    ["app.js", "enhance.js", "social.js", "modes.js", "profile.js", "accounts.js"]
+        .forEach(f => {
+            const src = fs.readFileSync(path.join(ROOT, f), "utf8")
+                .replace(/\/\*[\s\S]*?\*\//g, "")     // strip comments: they discuss popups
+                .replace(/^\s*\/\/.*$/gm, "");
+            const hit = src.match(POPUP);
+            check("no browser popups in " + f, !hit,
+                  hit ? "found " + hit[0].trim() : "clean");
+        });
+
+    // ---- the dialog layer ---------------------------------------------------
+    const confirmPromise = UI_confirmOpen();
+    function UI_confirmOpen() {
+        return window.UI.confirm({ title: "Delete this?", body: "It cannot be undone.",
+                                   confirm: "Delete", danger: true });
+    }
+
+    const dlg = window.document.querySelector(".dialog");
+    check("a dialog renders instead of a browser popup", !!dlg);
+    check("the dialog is a real modal for screen readers",
+          dlg.getAttribute("role") === "dialog" &&
+          dlg.getAttribute("aria-modal") === "true");
+    check("the dialog is labelled by its title",
+          dlg.getAttribute("aria-labelledby") === "dlg-title" &&
+          !!dlg.querySelector("#dlg-title"));
+    check("the page behind the dialog is inert",
+          window.document.querySelector("main").hasAttribute("inert"),
+          "otherwise Tab walks into a page you cannot see");
+    check("a destructive confirm looks destructive",
+          !!dlg.querySelector(".danger-button.solid"),
+          "the dangerous choice must not be styled as the primary one");
+    check("focus moves into the dialog",
+          dlg.contains(window.document.activeElement),
+          String(window.document.activeElement && window.document.activeElement.className));
+
+    dlg.querySelector('[data-act="ok"]').click();
+    check("confirming resolves true", (await confirmPromise) === true);
+
+    // Escape must cancel, or a keyboard user is stuck in the dialog.
+    const escPromise = window.UI.confirm({ title: "Sure?" });
+    const esc = new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true });
+    window.document.dispatchEvent(esc);
+    check("Escape cancels the dialog", (await escPromise) === false);
+
+    await new Promise(r => setTimeout(r, 220));
+    check("the page is interactive again after a dialog closes",
+          !window.document.querySelector("main").hasAttribute("inert"));
+
+    // Prompt
+    const promptPromise = window.UI.prompt({ title: "Rename", label: "Name", value: "Ola" });
+    const liveDialog = () => window.document.querySelector(".dialog-back:last-of-type .dialog");
+    const field = liveDialog().querySelector("#dlg-input");
+    check("a prompt renders a text field", !!field, field ? field.value : "");
+    field.value = "  Daniel  ";
+    liveDialog().querySelector('[data-act="ok"]').click();
+    check("a prompt returns the trimmed value", (await promptPromise) === "Daniel");
+
+    const cancelled = window.UI.prompt({ title: "Rename", label: "Name" });
+    liveDialog().querySelector('[data-act="cancel"]').click();
+    check("a cancelled prompt resolves null", (await cancelled) === null);
+
+    // A note has nothing to decline, so it must not offer Cancel.
+    const notePromise = window.UI.note({ title: "Heads up", body: "Something happened." });
+    check("a note shows only one button",
+          !liveDialog().querySelector('[data-act="cancel"]'));
+    liveDialog().querySelector('[data-act="ok"]').click();
+    await notePromise;
+
+    // Toasts
+    window.UI.ok("Saved.");
+    const toastEl = window.document.querySelector(".toast");
+    check("a toast renders", !!toastEl, toastEl ? toastEl.textContent.trim() : "");
+    check("toasts are announced politely",
+          window.document.querySelector(".toast-host").getAttribute("aria-live") === "polite");
+    check("toast text is escaped, not parsed as markup", (function () {
+        window.UI.info("<img src=x onerror=alert(1)>");
+        const t = window.document.querySelectorAll(".toast");
+        const last = t[t.length - 1];
+        return !last.querySelector("img");
+    })(), "usernames and room names end up in toasts");
+
     // ---- the gate lets you through once signed in ---------------------------
     window.refreshAuthGate();
     check("the gate is down once signed in", $("auth-gate").hidden === true);
@@ -569,9 +666,15 @@ check("export and import controls exist",
           !window.document.querySelector("main").hasAttribute("inert"));
 
     report();
-})();
+})().catch(e => {
+    // Without this, a throw inside the async block exits silently with no output
+    // at all — which looks like the suite passing.
+    console.error("\nTEST HARNESS THREW:", e && e.stack || e);
+    process.exit(1);
+});
 
 function report() {
+reported = true;
 // ---- report ----------------------------------------------------------------
 let failed = 0;
 for (const r of results) {

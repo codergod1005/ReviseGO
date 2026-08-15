@@ -6,6 +6,7 @@ a browser.
 
 ```
 index.html        markup + the SVG icon sprite
+ui.js             toasts and dialogs, replacing alert/confirm/prompt
 style.css         the design system (all colour lives in :root)
 profile.js        player profiles, premium and game unlocks — LOADS FIRST
 app.js            Quick Battle — questions, scoring, lives, XP, levels, achievements
@@ -61,6 +62,19 @@ changes everywhere; there is no raw hex anywhere else in the stylesheet.
 Interface icons are inline SVG (`<symbol>` sprite at the top of `index.html`), not emoji. Emoji
 render as a different picture on every platform, cannot take the theme colour, and are announced
 by a screen reader as their unicode name — "fire", "collision" — instead of what they label.
+
+## No browser popups
+
+`alert`, `confirm` and `prompt` are gone, replaced by `ui.js`. They broke the app in three ways:
+they are styled by the operating system so they look like a security warning rather than part of
+a game; they **freeze the whole page**, including a Speed Run countdown; and mobile browsers can
+suppress them entirely, which means an "are you sure?" the user never sees.
+
+In their place: a non-blocking **toast** for "that happened", and a real **dialog** for the two
+questions that need an answer. The dialog traps Tab inside itself, closes on Escape, restores
+focus to whatever opened it, and marks the rest of the page `inert` — the accessibility work
+that is usually skipped, and the reason hand-rolled dialogs are normally worse than the native
+one they replaced. A test asserts no popup can come back.
 
 ## Game modes
 

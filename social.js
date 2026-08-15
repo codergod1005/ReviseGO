@@ -115,9 +115,15 @@
         const out = $("sign-out");
         if (out) {
             out.addEventListener("click", function () {
-                if (!confirm("Sign out? Your progress stays saved on this device.")) return;
-                Accounts.signOut();
-                location.reload();
+                UI.confirm({
+                    title: "Sign out?",
+                    body: "Your progress stays saved on this device.",
+                    confirm: "Sign out"
+                }).then(yes => {
+                    if (!yes) return;
+                    Accounts.signOut();
+                    location.reload();
+                });
             });
         }
     }
@@ -189,6 +195,7 @@
                     ok = true;
                 }
                 copy.textContent = ok ? "Copied" : "Press Ctrl+C";
+                if (ok) UI.ok("Card copied. Send it to your friend.");
                 setTimeout(() => { copy.textContent = "Copy my card"; }, 1800);
             });
         }
@@ -204,6 +211,9 @@
                     $("friend-card").value = "";
                     renderFriends();
                     refreshBadges();
+                    UI.ok(result.message);
+                } else {
+                    UI.bad(result.message);
                 }
             });
         }
@@ -270,10 +280,17 @@
 
         host.querySelectorAll("[data-leave]").forEach(b =>
             b.addEventListener("click", () => {
-                if (!confirm("Leave this room? The results you've collected go with it.")) return;
-                Rooms.leave(b.dataset.leave);
-                renderRooms();
-                refreshBadges();
+                UI.confirm({
+                    title: "Leave this room?",
+                    body: "The results you've collected go with it.",
+                    confirm: "Leave",
+                    danger: true
+                }).then(yes => {
+                    if (!yes) return;
+                    Rooms.leave(b.dataset.leave);
+                    renderRooms();
+                    refreshBadges();
+                });
             }));
 
         host.querySelectorAll("[data-submit]").forEach(b =>
@@ -297,7 +314,7 @@
         if (!room) return;
 
         const set = Rooms.questionsFor(code, room.subject);
-        if (!set.length) { alert("No questions available for this room."); return; }
+        if (!set.length) { UI.bad("No questions available for this room."); return; }
 
         window.activeRoom = code;
 

@@ -913,12 +913,22 @@
         const add = host.querySelector("#add-profile");
         if (add) {
             add.addEventListener("click", () => {
-                const name = prompt("Name for the new player?");
-                if (!name) return;
-                if (!Profiles.create(name)) return;
-                const created = Profiles.list().slice(-1)[0];
-                Profiles.switchTo(created.id);
-                location.reload();
+                UI.prompt({
+                    title: "New player",
+                    label: "What should we call them?",
+                    placeholder: "e.g. Daniel",
+                    maxlength: 20,
+                    confirm: "Create"
+                }).then(name => {
+                    if (!name) return;
+                    if (!Profiles.create(name)) {
+                        UI.bad("You can have up to 6 players on one device.");
+                        return;
+                    }
+                    const created = Profiles.list().slice(-1)[0];
+                    Profiles.switchTo(created.id);
+                    location.reload();
+                });
             });
         }
 
@@ -935,10 +945,16 @@
             del.onclick = function () {
                 const p = Profiles.active();
                 if (!p) return;
-                if (!confirm('Delete "' + p.name + '"? Their XP, level and review list ' +
-                             "go with them, and it cannot be undone.")) return;
-                Profiles.remove(p.id);
-                location.reload();
+                UI.confirm({
+                    title: 'Delete "' + p.name + '"?',
+                    body: "Their XP, level and review list go with them. This cannot be undone.",
+                    confirm: "Delete player",
+                    danger: true
+                }).then(yes => {
+                    if (!yes) return;
+                    Profiles.remove(p.id);
+                    location.reload();
+                });
             };
         }
     }
@@ -1002,8 +1018,17 @@
         if (rename) {
             rename.onclick = function () {
                 const p = Profiles.active();
-                const next = prompt("New name for this player?", p ? p.name : "");
-                if (next && Profiles.rename(p.id, next)) renderProfileBar();
+                UI.prompt({
+                    title: "Rename player",
+                    label: "New name",
+                    value: p ? p.name : "",
+                    maxlength: 20
+                }).then(next => {
+                    if (next && Profiles.rename(p.id, next)) {
+                        renderProfileBar();
+                        UI.ok("Renamed to " + next + ".");
+                    }
+                });
             };
         }
 
@@ -1048,32 +1073,37 @@
                     try {
                         payload = JSON.parse(reader.result);
                     } catch (e) {
-                        alert("That file isn't a ReviseGo save.");
+                        UI.bad("That file isn't a ReviseGo save.");
                         return;
                     }
                     if (!payload || payload.app !== "ReviseGo" || !payload.data) {
-                        alert("That file isn't a ReviseGo save.");
+                        UI.bad("That file isn't a ReviseGo save.");
                         return;
                     }
                     // Overwriting a save is not undoable, so it asks first and says
                     // exactly whose progress is about to be replaced.
-                    if (!confirm("Import this save into \"" + Profiles.name() +
-                                 "\"? Their current XP, level and review list will be replaced.")) {
-                        return;
-                    }
-                    const d = payload.data;
-                    const map = {
-                        reviseGoXP: d.xp,
-                        reviseGoPlayer: d.player,
-                        reviseGoMistakes: d.mistakes,
-                        reviseGoStats: d.stats,
-                        reviseGoBests: d.bests
-                    };
-                    Object.keys(map).forEach(k => {
-                        if (map[k] != null) localStorage.setItem(k, map[k]);
+                    UI.confirm({
+                        title: "Import into " + Profiles.name() + "?",
+                        body: "Their current XP, level and review list will be replaced. " +
+                              "This cannot be undone.",
+                        confirm: "Import",
+                        danger: true
+                    }).then(yes => {
+                        if (!yes) return;
+                        const d = payload.data;
+                        const map = {
+                            reviseGoXP: d.xp,
+                            reviseGoPlayer: d.player,
+                            reviseGoMistakes: d.mistakes,
+                            reviseGoStats: d.stats,
+                            reviseGoBests: d.bests
+                        };
+                        Object.keys(map).forEach(k => {
+                            if (map[k] != null) localStorage.setItem(k, map[k]);
+                        });
+                        if (d.avatar) localStorage.setItem(AVATAR_KEY, d.avatar);
+                        location.reload();
                     });
-                    if (d.avatar) localStorage.setItem(AVATAR_KEY, d.avatar);
-                    location.reload();
                 };
                 reader.readAsText(f);
             };
@@ -1180,8 +1210,11 @@
             payBtn.onclick = function () {
                 if (!Premium.paymentLink) {
                     // Says what is actually true rather than opening a broken tab.
-                    alert("Payment isn't connected yet. Add a Stripe Payment Link to " +
-                          "PAYMENT_LINK in profile.js and this button will open checkout.");
+                    UI.note({
+                        title: "Payment isn't connected yet",
+                        body: "Add a Stripe Payment Link to PAYMENT_LINK in profile.js and " +
+                              "this button will open checkout."
+                    });
                     return;
                 }
                 window.open(Premium.paymentLink, "_blank", "noopener");
@@ -1204,6 +1237,9 @@
                     renderPremium();
                     renderGameLocks();
                     if (typeof updatePremiumScreen === "function") updatePremiumScreen();
+                    UI.ok(result.message);
+                } else {
+                    UI.bad(result.message);
                 }
             };
             input.addEventListener("keydown", e => {

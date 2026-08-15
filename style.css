@@ -2184,6 +2184,158 @@ body.gated { overflow: hidden; }
 
 
 /* =========================================================
+   TOASTS
+   Bottom-centre on mobile, bottom-right on desktop. They never
+   block anything — that is the entire point of replacing alert().
+========================================================= */
+
+.toast-host {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    z-index: 300;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 9px;
+    width: min(420px, calc(100vw - 28px));
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 13px var(--space-3);
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--card-hi);
+    border: 1px solid var(--line-strong);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--r);
+    box-shadow: var(--shadow-lg);
+    animation: toast-in 260ms var(--ease);
+}
+
+.toast .icon { flex: 0 0 auto; color: var(--primary); }
+
+.toast.ok { border-left-color: var(--correct); }
+.toast.ok .icon { color: var(--correct); }
+
+.toast.bad { border-left-color: var(--wrong); }
+.toast.bad .icon { color: var(--wrong); }
+
+.toast.out { animation: toast-out 240ms ease-in forwards; }
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes toast-out {
+    to { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+
+@media (min-width: 720px) {
+    .toast-host { left: auto; right: 24px; transform: none; align-items: flex-end; }
+}
+
+
+/* =========================================================
+   DIALOGS
+========================================================= */
+
+body.dialog-open { overflow: hidden; }
+
+.dialog-back {
+    position: fixed;
+    inset: 0;
+    z-index: 320;
+    display: grid;
+    place-items: center;
+    padding: var(--space-3);
+    background: rgba(5, 5, 10, 0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: screen-in 160ms ease-out;
+}
+
+.dialog-back.out { opacity: 0; transition: opacity 150ms ease-in; }
+
+.dialog {
+    width: 100%;
+    max-width: 420px;
+    padding: var(--space-4);
+    background: linear-gradient(180deg, var(--card-hi), var(--card));
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg);
+    animation: dialog-in 240ms var(--ease);
+}
+
+@keyframes dialog-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.96); }
+    to   { opacity: 1; transform: none; }
+}
+
+.dialog h2 { font-size: 1.25rem; margin-bottom: 9px; }
+.dialog p { font-size: 0.92rem; color: var(--text-soft); }
+
+.dialog.danger h2 { color: var(--wrong); }
+
+.dialog label {
+    display: block;
+    margin: var(--space-3) 0 7px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-soft);
+}
+
+.dialog input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 15px;
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+}
+
+.dialog input:focus { border-color: var(--primary); }
+
+.dialog-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: var(--space-4);
+}
+
+.dialog-buttons button { min-height: 46px; padding: 12px 22px; }
+
+/* A destructive confirm gets a filled red button, so the dangerous choice is
+   the one that looks dangerous rather than the one that looks primary. */
+.danger-button.solid {
+    color: #fff;
+    background: var(--wrong);
+    border-color: var(--wrong);
+    font-family: var(--font-display);
+    font-weight: 700;
+    border-radius: 999px;
+}
+
+.danger-button.solid:hover { background: #FF6B85; }
+
+@media (max-width: 460px) {
+    .dialog-buttons { flex-direction: column-reverse; }
+    .dialog-buttons button { width: 100%; }
+}
+
+
+/* =========================================================
    RESPONSIVE
 ========================================================= */
 

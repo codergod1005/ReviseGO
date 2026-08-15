@@ -123,7 +123,7 @@
 
         const available = pool(subject, mode.hard);
         if (!available.length) {
-            alert("There aren't any questions for that subject yet.");
+            UI.bad("There aren't any questions for that subject yet.");
             return;
         }
 

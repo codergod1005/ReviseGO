@@ -135,9 +135,14 @@ function unlockPremium() {
         later.
     */
 
-    alert(
-        "Premium payments aren't connected yet. Once payment is set up, your purchase will unlock Boss Battle, Speed Run and future Premium games."
-    );
+    // The premium button is wired by id in enhance.js now; this stays only as
+    // a safety net if something still calls it.
+    if (window.UI) {
+        UI.note({
+            title: "Payment isn't connected yet",
+            body: "Once it is, buying Premium will unlock Boss Battle and Speed Run."
+        });
+    }
 }
 
 
@@ -158,9 +163,7 @@ function confirmPremiumPurchase() {
 
     updatePremiumScreen();
 
-    alert(
-        "Premium unlocked!"
-    );
+    if (window.UI) UI.ok("Premium unlocked.");
 
     showScreen("home-screen");
 
@@ -258,9 +261,8 @@ function updatePremiumScreen() {
 
 function startPremiumGame(gameName) {
 
-    alert(
-        `${gameName} is unlocked! The Premium game itself is coming next.`
-    );
+    // modes.js overrides this with the real Speed Run / Boss Battle engines.
+    if (window.UI) UI.info(`${gameName} is unlocked.`);
 }
 
 
@@ -699,9 +701,7 @@ function startGame(subject) {
         0
     ) {
 
-        alert(
-            "There aren't any questions for this subject yet!"
-        );
+        if (window.UI) UI.bad("There aren't any questions for that subject yet.");
 
         return;
     }
